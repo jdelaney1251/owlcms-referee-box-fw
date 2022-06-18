@@ -1,0 +1,94 @@
+/ {
+    aliases {
+        led0 = &led0;
+        led1 = &led1;
+        led2 = &led2;
+        led3 = &led3;
+        btn-usr = &btn0;
+        btn-red = &btn1;
+        btn-blk = &btn2;
+        sw-id-0 = &id0;
+        sw-id-1 = &id1;
+        sw-id-2 = &id2;
+        bzr0 = &bzr0;
+    };
+
+    buttons {
+        compatible = "gpio-keys";
+        btn0: btn_usr {
+            gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>; // GPIO25
+            label = "User button";
+        };
+
+        btn1: btn_red {
+            gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>; // GPIO34
+            label = "Red button";
+        };
+
+        btn2: btn_blk {
+            gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>; // GPIO35
+            label = "Black button";
+        };
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        status = "okay";
+        led0: led_0 {
+            gpios = <&gpio0 18 GPIO_ACTIVE_HIGH>; // GPIO18
+            label = "LED0";
+            status = "okay";
+        };
+
+        led1: led_1 {
+            gpios = <&gpio0 19 GPIO_ACTIVE_HIGH>; // GPIO19
+            label = "LED1";
+        };
+
+        led2: led_2 {
+            gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>; // GPIO26
+            label = "LED2";
+        };
+
+        led3: led_3 {
+            gpios = <&gpio0 27 GPIO_ACTIVE_HIGH>; // GPIO27
+            label = "LED3";
+        };
+    };
+
+    id-sw {
+        compatible = "gpio-keys";
+        status = "okay";
+        id0: sw_id_0 {
+            gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+            label = "SW_ID0";
+        };
+
+        id1: sw_id_1 {
+            gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>;
+            label = "SW_ID1";
+        };
+
+        id2: sw_id_2 {
+            gpios = <&gpio0 21 GPIO_ACTIVE_HIGH>;
+            label = "SW_ID2";
+        };
+    };
+
+    bzr-out {
+        compatible = "gpio-leds";
+        status = "okay";
+        bzr0: bzr_0 {
+            gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;
+            label = "BZR_0";
+        };
+    };
+};
+
+&i2c0 {
+    status = "disabled";
+};
+
+&spi3 {
+    status = "disabled";
+};
