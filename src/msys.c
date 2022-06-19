@@ -32,6 +32,7 @@ typedef enum {
     E_INP_RED_DECISION,
     E_INP_BLK_DECISION,
     E_DECISION_HANDLED,
+    E_DECISION_SEND_ERR,
     E_DECISION_REQ_RX,
     E_TIMEOUT
 } event_t;
@@ -44,27 +45,27 @@ typedef struct {
 
 typedef struct {
     const char *name;
-    void (*func)(void);
+    void (*func)(event_t evt);
 } state_func_row_t;
 
 typedef struct {
     state_t curr_state;
 } state_machine_t;
 
-void state_func_pre_init();
-void state_func_pre_init_entry();
-void state_func_init();
-void state_func_init_entry();
-void state_func_idle_dconn();
-void state_func_idle_dconn_entry();
-void state_func_connecting();
-void state_func_connecting_entry();
-void state_func_idle_conn();
-void state_func_idle_conn_entry();
-void state_func_decision_rx();
-void state_func_decision_rx_entry();
-void state_func_decision_req();
-void state_func_decision_req_entry();
+void state_func_pre_init(event_t evt);
+void state_func_pre_init_entry(event_t evt);
+void state_func_init(event_t evt);
+void state_func_init_entry(event_t evt);
+void state_func_idle_dconn(event_t evt);
+void state_func_idle_dconn_entry(event_t evt);
+void state_func_connecting(event_t evt);
+void state_func_connecting_entry(event_t evt);
+void state_func_idle_conn(event_t evt);
+void state_func_idle_conn_entry(event_t evt);
+void state_func_decision_rx(event_t evt);
+void state_func_decision_rx_entry(event_t evt);
+void state_func_decision_req(event_t evt);
+void state_func_decision_req_entry(event_t evt);
 
 void state_machine_iterate();
 
@@ -108,78 +109,86 @@ static state_func_row_t state_func_entry[] = {
     {"S_DECISION_REQ",  &state_func_decision_req_entry}
 };
 
-void state_func_pre_init_entry()
+void state_func_pre_init_entry(event_t evt)
 {
     // this function never gets called...
     LOG_DBG("Enter pre-init state");
 }
 
-void state_func_pre_init()
+void state_func_pre_init(event_t evt)
 {
     
 }
 
-void state_func_init_entry()
+void state_func_init_entry(event_t evt)
 {
     LOG_DBG("Enter init state");
     io_mgr_init();
 }
 
-void state_func_init()
+void state_func_init(event_t evt)
 {
     LOG_DBG("inside init state");
 }
 
-void state_func_idle_dconn_entry()
+void state_func_idle_dconn_entry(event_t evt)
 {
     LOG_DBG("Enter idle-dconn state");
 }
 
-void state_func_idle_dconn()
+void state_func_idle_dconn(event_t evt)
 {
     LOG_DBG("inside idle dconn state");
 }
 
-void state_func_connecting_entry()
+void state_func_connecting_entry(event_t evt)
 {
     LOG_DBG("Enter connecting state");
     io_mgr_set_leds_connecting();
-
     comms_mgr_connect();
 }
 
-void state_func_connecting()
+void state_func_connecting(event_t evt)
 {   
 }
 
-void state_func_idle_conn_entry()
+void state_func_idle_conn_entry(event_t evt)
 {
     LOG_DBG("Enter idle-conn state");
 
     io_mgr_set_leds_disable();
 }
 
-void state_func_idle_conn()
+void state_func_idle_conn(event_t evt)
 {
     
 }
 
-void state_func_decision_rx_entry()
+void state_func_decision_rx_entry(event_t evt)
 {
     LOG_DBG("Enter decision rx state");
+
+    if (evt == SYS_EVT_INP_BLK_DECISION)
+    {
+        comms_mgr_notify_decision(COMMS_MGR_DEC_BLK);
+    }
+    else if (evt == SYS_EVT_INP_RED_DECISION)
+    {
+        comms_mgr_notify_decision(COMMS_MGR_DEC_RED);
+    }
 }
 
-void state_func_decision_rx()
+void state_func_decision_rx(event_t evt)
 {
     LOG_DBG("Enter decision req state");
 }
 
-void state_func_decision_req_entry()
+void state_func_decision_req_entry(event_t evt)
 {
 
 }
 
-void state_func_decision_req()
+void state_func_decision_req(event_t evt)
 {
     
 }
@@ -197,10 +206,10 @@ void state_machine_iterate(state_machine_t *state_machine, event_t evt)
                 {    
                     state_updated = true;
                     state_machine->curr_state = state_trans_matrix[i].next_state;
-                    (state_func_entry[state_machine->curr_state].func)();
+                    (state_func_entry[state_machine->curr_state].func)(evt);
                 }    
                 else
-                    (state_func_a[state_machine->curr_state].func)();
+                    (state_func_a[state_machine->curr_state].func)(evt);
             }
         }
     }

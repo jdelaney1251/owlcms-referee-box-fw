@@ -40,6 +40,8 @@ enum setting_ids {
     MQTT_PORT_ID,
     MQTT_CLIENT_NAME_ID,
     MQTT_CLIENT_NAME_LEN_ID,
+    OWLCMS_PLATFORM_NAME_ID,
+    OWLCMS_PLATFORM_NAME_LEN_ID,
     NUM_SETTINGS
 };
 
@@ -101,7 +103,19 @@ static setting_entry_t settings[] = {
         .name = "mqtt_client_name_length", 
         .data = NULL, 
         .data_len = sizeof(uint8_t)
-    }
+    },
+    {   .id = OWLCMS_PLATFORM_NAME_ID, 
+        .type = SETTING_TYPE_STR, 
+        .name = "platform",
+        .data = NULL,
+        .data_len = SETTING_TYPE_STR_MAXLEN * sizeof(uint8_t)
+    },
+    {   .id = OWLCMS_PLATFORM_NAME_LEN_ID, 
+        .type = SETTING_TYPE_UINT8,
+        .name = "platform", 
+        .data = NULL, 
+        .data_len = sizeof(uint8_t)
+    },
 };
 
 
@@ -318,6 +332,14 @@ int settings_util_load_mqtt_config(struct mqtt_config_settings *params)
     params->broker_addr = "10.0.0.7";
     params->broker_addr_len = 8;
     params->port = 1883;
-    params->client_name = "owlcms_ref_0";
+    params->client_name = "owlcms_ref_1";
     params->client_name_len = 12;
+}
+
+int settings_util_load_owlcms_config(struct owlcms_config_settings *params)
+{
+    if (params->platform == NULL)
+        params->platform = k_malloc(sizeof(uint8_t));
+    strcpy(params->platform, "A");
+    params->platform_len = 1;
 }

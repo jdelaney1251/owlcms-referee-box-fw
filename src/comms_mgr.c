@@ -11,6 +11,7 @@ LOG_MODULE_REGISTER(comms_mgr, LOG_LEVEL_DBG);
 #include <net/ethernet_mgmt.h>
 #include <net/wifi.h>
 #include <net/net_event.h>
+#include <net/mqtt.h>
 
 #include <esp_wifi.h>
 #include <esp_event.h>
@@ -19,15 +20,27 @@ LOG_MODULE_REGISTER(comms_mgr, LOG_LEVEL_DBG);
 #include "comms_mgr.h"
 #include "wifi_conn.h"
 #include "mqtt_client.h"
+#include "settings_util.h"
 #include "msys.h"
 
 #define SIGNAL_CMD_MAX_RETRIES          10
+
+#define DECISION_TOPIC_BASE             "owlcms/decision/"
+#define DECISION_GOOD               0
+#define DECISION_BAD                1
+
+static const char *decision_msg[] = {"good", "bad"};
+
+#define SUMMON_TOPIC_BASE               "owlcms/summon/"
+#define DECISION_REQ_BASE               "owlcms/decisionRequest/"
+
 
 typedef enum {
     CMD_NONE,
     CMD_RESET,
     CMD_CONNECT,
     CMD_DISCONNECT,
+    CMD_MQTT_START,
     CMD_CONFIG
 } comms_cmd_t;
 
@@ -39,6 +52,11 @@ static bool wifi_connected;
 static bool net_connected;
 static bool mqtt_connected;
 
+static struct owlcms_config_settings owlcms_settings;
+static uint8_t *decision_topic;
+static uint8_t decision_topic_len;
+static uint8_t ref_number;
+
 static struct k_work_delayable wifi_connect_work;
 static struct k_work_delayable wifi_disconnect_work;
 static struct k_work_delayable wifi_reset_work;
@@ -47,6 +65,7 @@ static struct k_work_delayable wifi_setup_work;
 void comms_mgr_thread();
 static void process_comms_cmd(comms_cmd_t cmd);
 void signal_net_state(uint8_t wifi_state, uint8_t net_state);
+void signal_mqtt_state(uint8_t mqtt_state);
 static int comms_mgr_signal_cmd(comms_cmd_t cmd);
 
 static void process_comms_cmd(comms_cmd_t cmd)
@@ -80,6 +99,12 @@ static void process_comms_cmd(comms_cmd_t cmd)
     {
         // TODO: implement configuration mode via BLE
     }
+    else if (cmd == CMD_MQTT_START)
+    {
+        mqtt_client_setup();
+        mqtt_client_start();
+        //msys_signal_evt(SYS_EVT_CONN_SUCCESS);
+    }
 
 }
 
@@ -108,8 +133,15 @@ int comms_mgr_init()
 
     wifi_conn_init();
     mqtt_client_mod_init();
+
+    ref_number = 1;
+    settings_util_load_owlcms_config(&owlcms_settings);
+    decision_topic_len = strlen(DECISION_TOPIC_BASE) + owlcms_settings.platform_len + 1;
+    decision_topic = k_malloc(sizeof(uint8_t) * decision_topic_len);
+    snprintk(decision_topic, decision_topic_len, "%s%s", DECISION_TOPIC_BASE, owlcms_settings.platform);
     
     wifi_conn_set_net_state_cb(&signal_net_state);
+    mqtt_client_set_state_cb(&signal_mqtt_state);
 
     k_work_init_delayable(&wifi_connect_work, wifi_conn_connect);
     k_work_init_delayable(&wifi_disconnect_work, wifi_conn_disconnect);
@@ -147,6 +179,29 @@ int comms_mgr_connect()
     return comms_mgr_signal_cmd(CMD_CONNECT);
 }
 
+int comms_mgr_disconnect()
+{
+    return comms_mgr_signal_cmd(CMD_DISCONNECT);
+}
+
+int comms_mgr_notify_decision(uint8_t decision)
+{
+    uint8_t ret = 0;
+    uint8_t *msg;
+    
+    
+    uint8_t msg_len = strlen(decision_msg[decision]) + 3; // plus 3 for space, ID nummber, \0
+    msg = k_malloc(sizeof(uint8_t) * msg_len);
+    snprintk(msg, msg_len, "%d %s", ref_number, decision_msg[decision]);
+    LOG_DBG("notify decision rx, topic: %s %d, msg: %s %d", decision_topic, decision_topic_len, msg, msg_len);
+    ret = mqtt_client_publish(MQTT_QOS_0_AT_MOST_ONCE, decision_topic, decision_topic_len-1, msg, msg_len-1);
+
+    if (ret == 0)
+        msys_signal_evt(SYS_EVT_DECISION_HANDLED);
+
+    return ret;
+}
+
 void signal_net_state(uint8_t wifi_state, uint8_t net_state)
 {
     if (wifi_state == WIFI_CONN_STATE_UP)
@@ -156,9 +211,7 @@ void signal_net_state(uint8_t wifi_state, uint8_t net_state)
     else if (net_state == WIFI_CONN_STATE_UP)
     {
         net_connected = true;
-        mqtt_client_setup();
-        mqtt_client_start();
-        msys_signal_evt(SYS_EVT_CONN_SUCCESS);
+        comms_mgr_signal_cmd(CMD_MQTT_START);
     }
     else if (wifi_state == WIFI_CONN_STATE_DOWN && net_state == WIFI_CONN_STATE_DOWN)
     {
@@ -166,5 +219,21 @@ void signal_net_state(uint8_t wifi_state, uint8_t net_state)
         net_connected = false;
         mqtt_client_teardown();
         msys_signal_evt(SYS_EVT_CONN_LOST);
+    }
+}
+
+void signal_mqtt_state(uint8_t mqtt_state)
+{
+    if (mqtt_state == MQTT_STATE_NO_CHANGE)
+    {
+
+    }
+    else if (mqtt_state == MQTT_STATE_CONNECTED)
+    {
+        msys_signal_evt(SYS_EVT_CONN_SUCCESS);
+    }
+    else if (mqtt_state == MQTT_STATE_DISCONNECTED)
+    {
+        // TODO: handle mqtt connection loss
     }
 }

@@ -85,6 +85,11 @@ static void handle_net_available()
 {
     LOG_INF("wifi net ip bound evt");
     net_connected = true;
+    while (net_if_ipv4_get_global_addr(net_iface,NET_ADDR_ANY_STATE) == NULL)
+    {
+        printk("dont have ip,waiting\n");
+        k_sleep(K_MSEC(1000));
+    }
     net_state_cb(WIFI_CONN_STATE_NO_CHANGE, WIFI_CONN_STATE_UP);
 }
 
@@ -148,8 +153,8 @@ void wifi_conn_setup(struct k_work *work)
     esp_err_t ret;
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = "Delaney",
-            .password = "DE28041964",
+            .ssid = "",
+            .password = "",
         },
     };
 
