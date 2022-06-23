@@ -77,7 +77,7 @@ void btn_usr_handler(uint8_t evt_type)
     }
     else if (evt_type == BTN_EVT_HOLD_2s)
     {
-        
+        msys_signal_evt(SYS_EVT_CONFIG)
     }
 }
 

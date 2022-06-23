@@ -36,8 +36,7 @@ typedef enum {
     E_DECISION_SEND_ERR,
     E_DECISION_REQ_RX,
     E_TIMEOUT,
-    E_CONFIG_REQ,
-    E_CONFIG_DONE
+    E_CONFIG,
 } event_t;
 
 typedef struct {
@@ -79,13 +78,13 @@ static state_trans_matrix_row_t state_trans_matrix[] = {
     {S_PRE_INIT,        E_ANY,             S_INIT           },
     {S_INIT,            E_ANY,             S_IDLE_DCONN     },
     {S_IDLE_DCONN,      E_ANY,             S_CONNECTING     },
-    {S_IDLE_DCONN,      E_CONFIG_REQ,      S_CONFIG         },
+    {S_IDLE_DCONN,      E_CONFIG,      S_CONFIG         },
     {S_CONNECTING,      E_CONN_SUCCESS,    S_IDLE_CONN      },
-    {S_CONNECTING,      E_CONFIG_REQ,      S_CONFIG         },
+    {S_CONNECTING,      E_CONFIG,      S_CONFIG         },
     {S_IDLE_CONN,       E_INP_RED_DECISION,S_DECISION_RX    },
     {S_IDLE_CONN,       E_INP_BLK_DECISION,S_DECISION_RX    },
     {S_IDLE_CONN,       E_DECISION_REQ_RX, S_DECISION_REQ   },
-    {S_IDLE_CONN,       E_CONFIG_REQ,      S_CONFIG         },
+    {S_IDLE_CONN,       E_CONFIG,      S_CONFIG         },
     {S_DECISION_RX,     E_DECISION_HANDLED,S_IDLE_CONN      },
     {S_DECISION_REQ,    E_TIMEOUT,         S_IDLE_CONN      },
     {S_DECISION_REQ,    E_INP_RED_DECISION,S_DECISION_RX    },
@@ -95,7 +94,7 @@ static state_trans_matrix_row_t state_trans_matrix[] = {
     {S_IDLE_CONN,       E_CONN_LOST,       S_IDLE_DCONN     },
     {S_IDLE_CONN,       E_ANY,             S_IDLE_CONN      },
     {S_CONFIG,          E_ANY,             S_CONFIG         },
-    {S_CONFIG,          E_CONFIG_DONE,     S_IDLE_DCONN     },
+    {S_CONFIG,          E_CONFIG,          S_IDLE_DCONN     },
 };
 
 #define STATE_TRANS_MATRIX_NUM_ROWS 15
