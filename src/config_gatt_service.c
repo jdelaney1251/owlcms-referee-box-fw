@@ -5,7 +5,6 @@ LOG_MODULE_REGISTER(config_gatt_service, LOG_LEVEL_DBG);
 #include <zephyr/zephyr.h>  
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/settings/settings.h>
-#include "gatt_macs.h"
 
 #include "config_gatt_service.h"
 

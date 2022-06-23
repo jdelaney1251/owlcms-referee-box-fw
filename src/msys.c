@@ -22,7 +22,7 @@ typedef enum {
     S_IDLE_CONN,
     S_DECISION_RX,
     S_DECISION_REQ,
-    S_CONFIG,
+    S_CONFIG
 } state_t;
 
 typedef enum {
@@ -36,7 +36,7 @@ typedef enum {
     E_DECISION_SEND_ERR,
     E_DECISION_REQ_RX,
     E_TIMEOUT,
-    E_CONFIG,
+    E_CONFIG
 } event_t;
 
 typedef struct {
@@ -94,7 +94,7 @@ static state_trans_matrix_row_t state_trans_matrix[] = {
     {S_IDLE_CONN,       E_CONN_LOST,       S_IDLE_DCONN     },
     {S_IDLE_CONN,       E_ANY,             S_IDLE_CONN      },
     {S_CONFIG,          E_ANY,             S_CONFIG         },
-    {S_CONFIG,          E_CONFIG,          S_IDLE_DCONN     },
+    {S_CONFIG,          E_CONFIG,          S_IDLE_DCONN     }
 };
 
 #define STATE_TRANS_MATRIX_NUM_ROWS 15
@@ -161,7 +161,8 @@ void state_func_connecting_entry(event_t evt)
 }
 
 void state_func_connecting(event_t evt)
-{   
+{
+    
 }
 
 void state_func_idle_conn_entry(event_t evt)
@@ -207,7 +208,7 @@ void state_func_decision_req(event_t evt)
 
 void state_func_config_entry(event_t evt)
 {
-    LOG_DBG("Enter config state")
+    LOG_DBG("Enter config state");
 }
 
 void state_func_config(event_t evt)

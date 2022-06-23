@@ -22,6 +22,7 @@ LOG_MODULE_REGISTER(comms_mgr, LOG_LEVEL_DBG);
 #include "mqtt_client.h"
 #include "settings_util.h"
 #include "msys.h"
+#include "ble_config_mgr.h"
 
 #define SIGNAL_CMD_MAX_RETRIES          10
 
@@ -96,10 +97,10 @@ static void process_comms_cmd(comms_cmd_t cmd)
         wifi_conn_disconnect();
         // k_work_reschedule(&wifi_disconnect_work, K_NO_WAIT);
     }
-    else if (cmd == CMD_CONFIG)
-    {
-        // TODO: implement configuration mode via BLE
-    }
+    // else if (cmd == CMD_CONFIG)
+    // {
+    //     // TODO: implement configuration mode via BLE
+    // }
     else if (cmd == CMD_MQTT_START)
     {
         mqtt_client_setup();

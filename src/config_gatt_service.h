@@ -1,5 +1,5 @@
-#ifndef CONFIG_GATT_SERVICE_H
-#define CONFIG_GATT_SERVICE_H
+#ifndef CONFIG_GATT_SERVICE_H_
+#define CONFIG_GATT_SERVICE_H_
 
 #include <stdint.h>
 
