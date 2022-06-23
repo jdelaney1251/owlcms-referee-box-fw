@@ -41,7 +41,8 @@ typedef enum {
     CMD_CONNECT,
     CMD_DISCONNECT,
     CMD_MQTT_START,
-    CMD_CONFIG
+    CMD_CONFIG_START,
+    CMD_CONFIG_STOP
 } comms_cmd_t;
 
 static struct k_thread comms_mgr_th;
@@ -104,6 +105,17 @@ static void process_comms_cmd(comms_cmd_t cmd)
         mqtt_client_setup();
         mqtt_client_start();
         //msys_signal_evt(SYS_EVT_CONN_SUCCESS);
+    }
+    else if (cmd == CMD_CONFIG_START)
+    {
+        mqtt_client_teardown();
+        wifi_conn_disconnect();
+
+        ble_config_mgr_start();
+    }
+    else if (cmd == CMD_CONFIG_STOP)
+    {
+        ble_config_mgr_stop();
     }
 
 }
@@ -200,6 +212,16 @@ int comms_mgr_notify_decision(uint8_t decision)
         msys_signal_evt(SYS_EVT_DECISION_HANDLED);
 
     return ret;
+}
+
+int comms_mgr_start_config()
+{
+    comms_mgr_signal_cmd(CMD_CONFIG_START);
+}
+
+int comms_mgr_end_config()
+{
+    comms_mgr_signal_cmd(CMD_CONFIG_STOP);
 }
 
 void signal_net_state(uint8_t wifi_state, uint8_t net_state)
