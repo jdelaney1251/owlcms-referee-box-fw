@@ -7,5 +7,7 @@ int io_mgr_set_leds_connecting();
 int io_mgr_set_leds_bat_level();
 int io_mgr_set_leds_disable();
 
+int io_mgr_set_leds_config();
+
 
 #endif

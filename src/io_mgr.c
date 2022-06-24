@@ -83,11 +83,12 @@ void btn_usr_handler(uint8_t evt_type)
 {
     if (evt_type == BTN_EVT_PRESSED)
     {
-        io_mgr_set_leds_bat_level();
+        //io_mgr_set_leds_bat_level();
+        msys_signal_evt(SYS_EVT_CONFIG_END);
+        
     }
     else if (evt_type == BTN_EVT_HOLD_2s)
     {
-        io_mgr_set_leds_config();
         msys_signal_evt(SYS_EVT_CONFIG);
     }
 }

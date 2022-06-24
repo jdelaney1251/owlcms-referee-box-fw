@@ -9,6 +9,7 @@
 #define SYS_EVT_DECISION_SEND_ERR       7
 #define SYS_EVT_DECISION_REQ_RX         8
 #define SYS_EVT_CONFIG                  10
+#define SYS_EVT_CONFIG_END              11
 
 int msys_init();
 int msys_run();

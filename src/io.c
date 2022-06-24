@@ -167,9 +167,9 @@ void btn_evt_thread(void *unused, void *unused1, void *unused2)
             k_mutex_unlock(&btn_state_data_mutex);
         }
         //LOG_INF("tick");
-        k_yield();
+        //k_yield();
         //k_sleep(K_MSEC(BTN_EVT_TICK_PERIOD_MS));
-        //k_msleep(BTN_EVT_TICK_PERIOD_MS);
+        k_msleep(BTN_EVT_TICK_PERIOD_MS);
     }
 }
 

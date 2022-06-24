@@ -83,9 +83,11 @@ static void process_comms_cmd(comms_cmd_t cmd)
     else if (cmd == CMD_CONNECT)
     {
         LOG_INF("proc cmd CONNECT");
-
+        struct wifi_config_settings config;
+        settings_util_load_wifi_config(&config);
+        LOG_DBG("loaded wifi ssid/psk, %s, %s", config.ssid, config.psk);
         wifi_conn_reset();
-        wifi_conn_setup();
+        wifi_conn_setup(&config);
         wifi_conn_connect();
         // k_work_reschedule(&wifi_reset_work, K_NO_WAIT);
         // k_work_reschedule(&wifi_setup_work, K_NO_WAIT);
@@ -109,6 +111,7 @@ static void process_comms_cmd(comms_cmd_t cmd)
     }
     else if (cmd == CMD_CONFIG_START)
     {
+        LOG_INF("starting ble config mode");
         mqtt_client_teardown();
         wifi_conn_disconnect();
 
@@ -124,16 +127,18 @@ static void process_comms_cmd(comms_cmd_t cmd)
 void comms_mgr_thread()
 {
     int ret = 0;
-    comms_cmd_t cmd;
+    comms_cmd_t cmd = 0;
 
     while (1)
     {
         ret = k_msgq_get(&comms_cmd_queue, &cmd, K_NO_WAIT);
         if (ret == 0)
         {
+            LOG_DBG("comms_mgr evt %d", cmd);
             process_comms_cmd(cmd);
         }
         k_yield();
+        //k_msleep(5);
     }
 }
 
@@ -174,7 +179,7 @@ int comms_mgr_signal_cmd(comms_cmd_t cmd)
 {
     comms_cmd_t c = cmd;
     uint8_t count = 0;
-    LOG_DBG("comms_mgr evt %d", cmd);
+    //LOG_DBG("comms_mgr evt %d", cmd);
     while (k_msgq_put(&comms_cmd_queue, &c, K_NO_WAIT) != 0)
     {
         if (count >= SIGNAL_CMD_MAX_RETRIES)

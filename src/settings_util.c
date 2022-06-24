@@ -1,6 +1,6 @@
 #include <logging/log.h>
 
-LOG_MODULE_REGISTER(settings_util, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(settings_util, LOG_LEVEL_ERR);
 
 #include <string.h>
 
@@ -298,21 +298,36 @@ int settings_util_init()
 
 int settings_util_load_wifi_config(struct wifi_config_settings *params)
 {
-    LOG_DBG("loading wifi params from settings");
-    memcpy(params->ssid_length, settings[SSID_LEN_ID].data, settings[SSID_LEN_ID].data_len);
-    LOG_DBG("here");
-    memcpy(params->psk_length, settings[PSK_LEN_ID].data, settings[PSK_LEN_ID].data_len);
-    memcpy(params->ssid, settings[SSID_ID].data, params->ssid_length);
-    memcpy(params->psk, settings[PSK_ID].data, params->psk_length);
+    //LOG_DBG("loading wifi params from settings");
+    //memcpy(params->ssid_length, settings[SSID_LEN_ID].data, settings[SSID_LEN_ID].data_len);
+    //LOG_DBG("here");
+    //memcpy(params->psk_length, settings[PSK_LEN_ID].data, settings[PSK_LEN_ID].data_len);
+    if (params->ssid == NULL)
+    {
+        params->ssid = k_malloc(sizeof(uint8_t) * SETTING_TYPE_STR_MAXLEN);
+    }
+
+    if (params->psk == NULL)
+    {
+        params->psk = k_malloc(sizeof(uint8_t) * SETTING_TYPE_STR_MAXLEN);
+    }
+
+    //memcpy(params->ssid, settings[SSID_ID].data, params->ssid_length);
+    //memcpy(params->psk, settings[PSK_ID].data, params->psk_length);
+
+    strcpy(params->ssid, settings[SSID_ID].data);
+    strcpy(params->psk, settings[PSK_ID].data);
 }
 
 int settings_util_set_wifi_ssid(const char *ssid, uint8_t len)
 {
     LOG_DBG("copy ssid");
-    memcpy(settings[SSID_ID].data, ssid, len);
+    //memcpy(settings[SSID_ID].data, ssid, len);
+    strcpy(settings[SSID_ID].data, ssid);
     LOG_DBG("copy ssid_len: data: %d, len: %d", len, settings[SSID_LEN_ID].data_len);
-    memcpy(settings[SSID_LEN_ID].data, &len, settings[SSID_LEN_ID].data_len);
-    printk("%d", (uint8_t *)settings[SSID_LEN_ID].data);
+    //*settings[SSID_LEN_ID].data = len;
+    //memcpy(settings[SSID_LEN_ID].data, &len, settings[SSID_LEN_ID].data_len);
+    //printk("%d", (uint8_t *)settings[SSID_LEN_ID].data);
     LOG_DBG("save ssid");
     save_setting(SSID_ID);
     LOG_DBG("save ssid_len");
@@ -321,8 +336,10 @@ int settings_util_set_wifi_ssid(const char *ssid, uint8_t len)
 
 int settings_util_set_wifi_psk(const char *psk, uint8_t len)
 {
-    memcpy(settings[PSK_ID].data, psk, len);
-    memcpy(settings[PSK_LEN_ID].data, &len, settings[PSK_LEN_ID].data_len);
+    //memcpy(settings[PSK_ID].data, psk, len);
+    strcpy(settings[PSK_ID].data, psk);
+    //*settings[PSK_LEN_ID].data = len;
+    //memcpy(settings[PSK_LEN_ID].data, &len, settings[PSK_LEN_ID].data_len);
     save_setting(PSK_ID);
     save_setting(PSK_LEN_ID);
 }

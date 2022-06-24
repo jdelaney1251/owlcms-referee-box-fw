@@ -7,6 +7,7 @@ LOG_MODULE_REGISTER(config_gatt_service, LOG_LEVEL_DBG);
 #include <zephyr/settings/settings.h>
 
 #include "config_gatt_service.h"
+#include "settings_util.h"
 
 #define READ_VAL_CB_ARGS         struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf, uint16_t len, uint16_t offset
 #define WRITE_VAL_CB_ARGS       struct bt_conn *conn, \
@@ -24,12 +25,25 @@ static struct bt_uuid_128 wifi_ssid_uuid = BT_UUID_INIT_128(
 static struct bt_uuid_128 wifi_psk_uuid = BT_UUID_INIT_128(
 	BT_UUID_128_ENCODE(0x0000fe42, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
 
+static struct bt_uuid_128 mqtt_srv_uuid = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x0000fe43, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
 
+static struct bt_uuid_128 mqtt_client_name_uuid = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x0000fe44, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
+
+static struct bt_uuid_128 owlcms_platform_name_uuid = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x0000fe45, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
+
+static struct bt_uuid_128 config_write_uuid = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x0000fe46, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
 
 static struct config_settings config;
 
 static uint8_t wifi_ssid[32] = {};
 static uint8_t wifi_psk[32] = {};
+static uint8_t mqtt_srv[32] = {};
+static uint8_t mqtt_client_name[32] = {};
+static uint8_t owlcms_platform_name[32] = {};
 
 
 static ssize_t read_value_wifi_ssid(struct bt_conn *conn, const struct bt_gatt_attr *attr,
@@ -89,6 +103,15 @@ static ssize_t write_value_wifi_psk(struct bt_conn *conn, const struct bt_gatt_a
     return len;
 }
 
+static ssize_t config_write(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+			 const void *buf, uint16_t len, uint16_t offset,
+			 uint8_t flags)
+{
+    settings_util_set_wifi_ssid(wifi_ssid, strlen(wifi_ssid));
+    settings_util_set_wifi_psk(wifi_psk, strlen(wifi_psk));
+
+    return len;
+}
 
 // struct bt_gatt_attr config_service_attrs[] = {
 //     BT_GATT_PRIMARY_SERVICE(&config_service_uuid),
@@ -111,7 +134,23 @@ BT_GATT_SERVICE_DEFINE(config_service,
         BT_GATT_CHARACTERISTIC(&wifi_psk_uuid.uuid,
             BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
             BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
-            read_value_wifi_psk, write_value_wifi_psk, &wifi_psk)
+            read_value_wifi_psk, write_value_wifi_psk, &wifi_psk),
+        BT_GATT_CHARACTERISTIC(&mqtt_srv_uuid.uuid,
+            BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
+            BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
+            read_value_wifi_psk, write_value_wifi_psk, &mqtt_srv),
+        BT_GATT_CHARACTERISTIC(&mqtt_client_name_uuid.uuid,
+            BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
+            BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
+            read_value_wifi_psk, write_value_wifi_psk, &mqtt_client_name),
+        BT_GATT_CHARACTERISTIC(&owlcms_platform_name_uuid.uuid,
+            BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
+            BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
+            read_value_wifi_psk, write_value_wifi_psk, &owlcms_platform_name),
+        BT_GATT_CHARACTERISTIC(&config_write_uuid.uuid,
+            BT_GATT_CHRC_WRITE_WITHOUT_RESP,
+            BT_GATT_PERM_WRITE,
+            NULL, config_write, (void *)1)
 );
 
 //static struct bt_gatt_service config_service = BT_GATT_SERVICE(config_service_attrs);
@@ -123,6 +162,9 @@ void config_gatt_service_init(struct config_settings cfg)
     int ret = 0;
     strcpy(wifi_ssid, "Empty");
     strcpy(wifi_psk, "Empty");
+    strcpy(mqtt_srv, "Empty");
+    strcpy(mqtt_client_name, "Empty");
+    strcpy(owlcms_platform_name, "Empty");
     //snprintk(config.wifi_ssid, 10, "this is a");
     //memcpy(config.wifi_ssid, "test str  ", 10);
 
