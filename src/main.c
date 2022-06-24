@@ -35,7 +35,7 @@ void main(void)
     // leds_cfg.pattern = 0x0A;
     // io_set_leds_cfg(leds_cfg);
 
-    LOG_INF("ID of this device is %d", io_get_dev_id());
+    //LOG_INF("ID of this device is %d", io_get_dev_id());
 
     /*
     struct wifi_connect_req_params wifi_cfg;

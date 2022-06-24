@@ -97,7 +97,7 @@ static state_trans_matrix_row_t state_trans_matrix[] = {
     {S_CONFIG,          E_CONFIG,          S_IDLE_DCONN     }
 };
 
-#define STATE_TRANS_MATRIX_NUM_ROWS 15
+#define STATE_TRANS_MATRIX_NUM_ROWS 20
 
 static state_func_row_t state_func_a[] = {
     {"S_PRE_INIT",      &state_func_pre_init     },

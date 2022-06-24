@@ -25,6 +25,11 @@ static const leds_cfg_t leds_cfg_disable = {
     .pattern = 0x00
 };
 
+static const leds_cfg_t leds_cfg_config = {
+    .cfg_type = LED_CFG_TYPE_BLINK_STATIC,
+    .pattern = 0x01
+};
+
 void btn_usr_handler(uint8_t evt_type);
 void btn_red_handler(uint8_t evt_type);
 void btn_blk_handler(uint8_t evt_type);
@@ -44,6 +49,11 @@ int io_mgr_init()
 
     k_work_init_delayable(&leds_disable_work, leds_disable_work_fn);
 
+}
+
+int io_mgr_set_leds_config()
+{
+    return io_set_leds_cfg(leds_cfg_config);
 }
 
 int io_mgr_set_leds_connecting()
@@ -77,6 +87,7 @@ void btn_usr_handler(uint8_t evt_type)
     }
     else if (evt_type == BTN_EVT_HOLD_2s)
     {
+        io_mgr_set_leds_config();
         msys_signal_evt(SYS_EVT_CONFIG);
     }
 }

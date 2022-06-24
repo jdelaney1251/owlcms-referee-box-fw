@@ -412,13 +412,13 @@ int io_set_leds_cfg(leds_cfg_t cfg)
 {
     int ret = 0;
     ret = k_msgq_put(&leds_cfg_queue, &cfg, K_NO_WAIT);
-    return 0;
+    return ret;
 }
 
 int io_set_led(uint8_t led)
 {
     int ret = 0;
-    if (led <= NUM_LEDS)
+    if (led <= NUM_LEDS-1)
     {
         ret = gpio_pin_set_dt(&(*leds[led]), 1);
         return ret;
@@ -485,17 +485,17 @@ int io_get_dev_id()
     return ret;
 }
 
-int io_reg_cb_btn_usr(void (*cb)(uint8_t))
+void io_reg_cb_btn_usr(void (*cb)(uint8_t))
 {
     btn_evt_handlers[BTN_USR_ID] = cb;
 }
 
-int io_reg_cb_btn_red(void (*cb)(uint8_t))
+void io_reg_cb_btn_red(void (*cb)(uint8_t))
 {
     btn_evt_handlers[BTN_RED_ID] = cb;
 }
 
-int io_reg_cb_btn_blk(void (*cb)(uint8_t))
+void io_reg_cb_btn_blk(void (*cb)(uint8_t))
 {
     btn_evt_handlers[BTN_BLK_ID] = cb;
 }

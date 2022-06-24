@@ -11,7 +11,7 @@ int comms_mgr_connect();
 int comms_mgr_disconnect();
 
 int comms_mgr_start_config();
-int comms_mgr_end_config():
+int comms_mgr_end_config();
 
 int comms_mgr_notify_decision(uint8_t decision);
 

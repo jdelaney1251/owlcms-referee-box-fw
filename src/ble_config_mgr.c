@@ -28,8 +28,8 @@ static const struct bt_data sd[] = {
     BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
 };
 
-static void ble_host_connected(struct bt_conn *conn, uint8_t err);
-static void ble_host_disconnected(struct bt_conn *conn, uint8_t err);
+static void ble_host_connected(struct bt_conn *connected, uint8_t err);
+static void ble_host_disconnected(struct bt_conn *connected, uint8_t reason);
 
 struct config_settings settings_temp;
 
@@ -42,7 +42,7 @@ int ble_config_mgr_init()
 {
     int ret = 0;
 
-    bt_enable(NULL);
+    ret = bt_enable(NULL);
     if (ret != 0)
     {
         LOG_ERR("Bluetooth init failed: %d", ret);
@@ -65,6 +65,7 @@ int ble_config_mgr_deinit()
         LOG_ERR("Bluetooth deinit failed: %d", ret);
         return ret;
     }
+    return ret;
 }
 
 static void auth_cancel(struct bt_conn *conn)
@@ -89,7 +90,7 @@ int ble_config_mgr_start()
     ret = bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
     //bt_conn_auth_cb_register(&auth_cb_display);
 
-
+    return ret;
 }
 
 int ble_config_mgr_stop()
