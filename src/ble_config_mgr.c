@@ -9,6 +9,7 @@ LOG_MODULE_REGISTER(ble_config_mgr, LOG_LEVEL_DBG);
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/bluetooth/gatt.h>
+#include <zephyr/sys/reboot.h>
 
 #include "ble_config_mgr.h"
 #include "config_gatt_service.h"
@@ -81,11 +82,11 @@ static struct bt_conn_auth_cb auth_cb_display = {
 	.cancel = auth_cancel,
 };
 
-int ble_config_mgr_start()
+int ble_config_mgr_start(struct config_settings *settings)
 {
     int ret = 0;
     ble_config_mgr_init();
-    config_gatt_service_init(settings_temp);
+    config_gatt_service_init(settings);
 
     ret = bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
     //bt_conn_auth_cb_register(&auth_cb_display);
@@ -120,5 +121,6 @@ static void ble_host_disconnected(struct bt_conn *connected, uint8_t reason)
         bt_conn_unref(connected);
         conn = NULL;
     }
+    sys_reboot(SYS_REBOOT_COLD);
 }
 

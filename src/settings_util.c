@@ -19,6 +19,7 @@ LOG_MODULE_REGISTER(settings_util, LOG_LEVEL_ERR);
 
 #define SETTING_TYPE_UINT8              0
 #define SETTING_TYPE_STR                1
+#define SETTING_TYPE_UINT16             2
 
 #define SETTING_TYPE_STR_MAXLEN         32
 
@@ -86,10 +87,10 @@ static setting_entry_t settings[] = {
         .data_len = sizeof(uint8_t)
     },
     {   .id = MQTT_PORT_ID, 
-        .type = SETTING_TYPE_UINT8,
+        .type = SETTING_TYPE_UINT16,
         .name = "mqtt_port", 
         .data = NULL, 
-        .data_len = sizeof(uint8_t)
+        .data_len = sizeof(uint16_t)
     },
     {
         .id = MQTT_CLIENT_NAME_ID,
@@ -218,17 +219,27 @@ void write_empty_setting(setting_entry_t *entry)
 {
     int ret = 0;
 
-    if (entry->type == SETTING_TYPE_UINT8)
+    // if (entry->type == SETTING_TYPE_UINT8)
+    // {
+    //     entry->data = (uint8_t)0;
+    // }
+    // else if (entry->type == SETTING_TYPE_STR)
+    // {
+    //     for (uint8_t i = 0; i < entry->data_len; i++)
+    //     {
+    //         memset(entry->data, 0, entry->data_len);
+    //     }
+    // }
+    // else if (entry->type == SETTING_TYPE_UINT16)
+    // {
+    //     entry->data = (uint16_t)0;
+    // }
+
+    for (uint8_t i = 0; i < entry->data_len; i++)
     {
-        entry->data = (uint8_t)0;
+        memset(entry->data++, 0, entry->data_len);
     }
-    else if (entry->type == SETTING_TYPE_STR)
-    {
-        for (uint8_t i = 0; i < entry->data_len; i++)
-        {
-            memset(entry->data, 0, entry->data_len);
-        }
-    }
+
     nvs_write(&fs, entry->id, entry->data, entry->data_len);
 }
 
@@ -321,23 +332,25 @@ int settings_util_load_wifi_config(struct wifi_config_settings *params)
 
 int settings_util_set_wifi_ssid(const char *ssid, uint8_t len)
 {
-    LOG_DBG("copy ssid");
+    //LOG_DBG("copy ssid");
     //memcpy(settings[SSID_ID].data, ssid, len);
-    strcpy(settings[SSID_ID].data, ssid);
-    LOG_DBG("copy ssid_len: data: %d, len: %d", len, settings[SSID_LEN_ID].data_len);
+    if (ssid != NULL)
+        strcpy(settings[SSID_ID].data, ssid);
+    //LOG_DBG("copy ssid_len: data: %d, len: %d", len, settings[SSID_LEN_ID].data_len);
     //*settings[SSID_LEN_ID].data = len;
     //memcpy(settings[SSID_LEN_ID].data, &len, settings[SSID_LEN_ID].data_len);
     //printk("%d", (uint8_t *)settings[SSID_LEN_ID].data);
-    LOG_DBG("save ssid");
+    //LOG_DBG("save ssid");
     save_setting(SSID_ID);
-    LOG_DBG("save ssid_len");
+    //LOG_DBG("save ssid_len");
     save_setting(SSID_LEN_ID);
 }
 
 int settings_util_set_wifi_psk(const char *psk, uint8_t len)
 {
     //memcpy(settings[PSK_ID].data, psk, len);
-    strcpy(settings[PSK_ID].data, psk);
+    if (psk != NULL)
+        strcpy(settings[PSK_ID].data, psk);
     //*settings[PSK_LEN_ID].data = len;
     //memcpy(settings[PSK_LEN_ID].data, &len, settings[PSK_LEN_ID].data_len);
     save_setting(PSK_ID);
@@ -346,17 +359,50 @@ int settings_util_set_wifi_psk(const char *psk, uint8_t len)
 
 int settings_util_load_mqtt_config(struct mqtt_config_settings *params)
 {
+    if (params->broker_addr != NULL)
+        strcpy(params->broker_addr, settings[MQTT_SRV_ID].data);
+    memcpy(&(params->port), settings[MQTT_PORT_ID].data, sizeof(params->port));
+    
+    return 0;
+}
+
+int settings_util_set_mqtt_config(struct mqtt_config_settings *params)
+{
+    /*
     params->broker_addr = "10.0.0.7";
     params->broker_addr_len = 8;
     params->port = 1883;
     params->client_name = "owlcms_ref_1";
     params->client_name_len = 12;
+    */
+    strcpy(settings[MQTT_SRV_ID].data, params->broker_addr);
+    //settings[MQTT_PORT_ID].data = (uint16_t)params->port;
+    memcpy(settings[MQTT_PORT_ID].data, &(params->port), settings[MQTT_PORT_ID].data_len);
+
+    save_setting(MQTT_SRV_ID);
+    save_setting(MQTT_PORT_ID);
+    return 0;
 }
 
 int settings_util_load_owlcms_config(struct owlcms_config_settings *params)
 {
+    if (params->platform != NULL)
+        strcpy(params->platform, settings[OWLCMS_PLATFORM_NAME_ID].data);
+    
+    return 0;
+}
+
+int settings_util_set_owlcms_config(struct owlcms_config_settings *params)
+{
+    /*
     if (params->platform == NULL)
         params->platform = k_malloc(sizeof(uint8_t));
     strcpy(params->platform, "A");
     params->platform_len = 1;
+    */
+   strcpy(settings[OWLCMS_PLATFORM_NAME_ID].data, params->platform);
+
+   save_setting(OWLCMS_PLATFORM_NAME_ID);
+
+   return 0;
 }

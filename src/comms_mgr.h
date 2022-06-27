@@ -4,7 +4,7 @@
 #define COMMS_MGR_DEC_BLK       0
 #define COMMS_MGR_DEC_RED       1
 
-int comms_mgr_init();
+int comms_mgr_init(uint8_t device_id);
 
 int comms_mgr_is_connected();
 int comms_mgr_connect();

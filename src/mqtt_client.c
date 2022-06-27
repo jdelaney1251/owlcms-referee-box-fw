@@ -50,7 +50,6 @@ static bool connected;
 static struct sockaddr_storage broker_serv;
 
 static struct mqtt_client client;
-static struct mqtt_config_settings config;
 
 static struct zsock_pollfd fds[1];
 
@@ -118,28 +117,29 @@ int mqtt_client_mod_init()
     k_work_init_delayable(&mqtt_client_input_work, mqtt_client_input);
 }
 
-int mqtt_client_setup()
+int mqtt_client_setup(struct mqtt_config_settings *config)
 {
     
 
-    settings_util_load_mqtt_config(&config);
+    
 
     LOG_INF("starting");
     mqtt_client_init(&client);
-    LOG_INF("setting up client addr");
+    LOG_INF("setting up client addr at %s", config->broker_addr);
     struct sockaddr_in *broker = (struct sockaddr_in *)&broker_serv;
     broker->sin_family = AF_INET;
-    //broker->sin_port = htons(config.port);
-    broker->sin_port = htons(1883);
+    LOG_INF("setting up port at %d", config->port);
+    broker->sin_port = htons(config->port);
+    //broker->sin_port = htons(1883);
     //char *serv_str = k_malloc(sizeof(char) * config.broker_addr_len);
     //snprintk(serv_str, config.broker_addr_len, "%s", config.broker_addr);
-    zsock_inet_pton(AF_INET, "10.0.0.7", &broker->sin_addr);
+    zsock_inet_pton(AF_INET, config->broker_addr, &broker->sin_addr);
     
     LOG_INF("cfg client params");
     client.broker = &broker_serv;
     client.evt_cb = mqtt_evt_handler;
-    client.client_id.utf8 = config.client_name;
-    client.client_id.size = config.client_name_len;
+    client.client_id.utf8 = config->client_name;
+    client.client_id.size = strlen(config->client_name);
     client.password = NULL;
     client.user_name = NULL;
     client.protocol_version = MQTT_VERSION_3_1_1;

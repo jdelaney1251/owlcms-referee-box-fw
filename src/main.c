@@ -26,7 +26,7 @@ void main(void)
     int ret = 0;
     ret = io_init();
     ret = settings_util_init();
-    ret = comms_mgr_init();
+    ret = comms_mgr_init(io_get_dev_id());
 
     ret = msys_init();
     msys_run();

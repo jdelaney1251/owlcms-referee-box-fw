@@ -28,23 +28,49 @@ static struct bt_uuid_128 wifi_psk_uuid = BT_UUID_INIT_128(
 static struct bt_uuid_128 mqtt_srv_uuid = BT_UUID_INIT_128(
 	BT_UUID_128_ENCODE(0x0000fe43, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
 
-static struct bt_uuid_128 mqtt_client_name_uuid = BT_UUID_INIT_128(
+static struct bt_uuid_128 mqtt_port_uuid = BT_UUID_INIT_128(
 	BT_UUID_128_ENCODE(0x0000fe44, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
 
-static struct bt_uuid_128 owlcms_platform_name_uuid = BT_UUID_INIT_128(
+static struct bt_uuid_128 mqtt_client_name_uuid = BT_UUID_INIT_128(
 	BT_UUID_128_ENCODE(0x0000fe45, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
 
-static struct bt_uuid_128 config_write_uuid = BT_UUID_INIT_128(
+static struct bt_uuid_128 owlcms_platform_name_uuid = BT_UUID_INIT_128(
 	BT_UUID_128_ENCODE(0x0000fe46, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
+
+static struct bt_uuid_128 config_write_uuid = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x0000fe47, 0x8e22, 0x4541, 0x9d4c, 0x21edae82ed19));
 
 static struct config_settings config;
 
 static uint8_t wifi_ssid[32] = {};
 static uint8_t wifi_psk[32] = {};
 static uint8_t mqtt_srv[32] = {};
+static uint16_t mqtt_port = 0;
 static uint8_t mqtt_client_name[32] = {};
 static uint8_t owlcms_platform_name[32] = {};
 
+static ssize_t write_uint16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+            const void *buf, uint16_t len, uint16_t offset, uint8_t flags)
+{
+    uint8_t *value = attr->user_data;
+
+    if (offset >= sizeof(uint16_t))
+        return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
+    if (offset + len > sizeof(uint16_t))
+        return BT_GATT_ERR(BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
+        
+    memcpy(value + offset, buf, len);
+
+    return len;
+}
+
+static ssize_t read_uint16(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+            void *buf, uint16_t len, uint16_t offset)
+{
+    const uint8_t *value = attr->user_data;
+
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, value, sizeof(uint16_t));
+}
 
 static ssize_t read_value_wifi_ssid(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 			void *buf, uint16_t len, uint16_t offset)
@@ -110,6 +136,16 @@ static ssize_t config_write(struct bt_conn *conn, const struct bt_gatt_attr *att
     settings_util_set_wifi_ssid(wifi_ssid, strlen(wifi_ssid));
     settings_util_set_wifi_psk(wifi_psk, strlen(wifi_psk));
 
+    struct mqtt_config_settings mqtt_config;
+    strcpy(mqtt_config.broker_addr, mqtt_srv);
+    mqtt_config.port = mqtt_port;
+    strcpy(mqtt_config.client_name, mqtt_client_name);
+    settings_util_set_mqtt_config(&mqtt_config);
+
+    struct owlcms_config_settings owlcms_config;
+    strcpy(owlcms_config.platform, owlcms_platform_name);
+    settings_util_set_owlcms_config(&owlcms_config);
+
     return len;
 }
 
@@ -139,6 +175,10 @@ BT_GATT_SERVICE_DEFINE(config_service,
             BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
             BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
             read_value_wifi_psk, write_value_wifi_psk, &mqtt_srv),
+        BT_GATT_CHARACTERISTIC(&mqtt_port_uuid.uuid,
+            BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
+            BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
+            read_uint16, write_uint16, &mqtt_port),
         BT_GATT_CHARACTERISTIC(&mqtt_client_name_uuid.uuid,
             BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
             BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
@@ -157,14 +197,15 @@ BT_GATT_SERVICE_DEFINE(config_service,
 
 //static void (* service_write_cb)(struct config_settings);
 
-void config_gatt_service_init(struct config_settings cfg)
+void config_gatt_service_init(struct config_settings *settings)
 {
     int ret = 0;
-    strcpy(wifi_ssid, "Empty");
-    strcpy(wifi_psk, "Empty");
-    strcpy(mqtt_srv, "Empty");
+    strcpy(wifi_ssid,   settings->wifi->ssid);
+    strcpy(wifi_psk, settings->wifi->psk);
+    strcpy(mqtt_srv, settings->mqtt->broker_addr);
+    mqtt_port = settings->mqtt->port;
     strcpy(mqtt_client_name, "Empty");
-    strcpy(owlcms_platform_name, "Empty");
+    strcpy(owlcms_platform_name, settings->owlcms->platform);
     //snprintk(config.wifi_ssid, 10, "this is a");
     //memcpy(config.wifi_ssid, "test str  ", 10);
 

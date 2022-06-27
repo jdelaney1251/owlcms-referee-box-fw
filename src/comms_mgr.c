@@ -23,8 +23,11 @@ LOG_MODULE_REGISTER(comms_mgr, LOG_LEVEL_DBG);
 #include "settings_util.h"
 #include "msys.h"
 #include "ble_config_mgr.h"
+#include "config_gatt_service.h"
 
 #define SIGNAL_CMD_MAX_RETRIES          10
+
+#define MQTT_CLIENT_NAME_BASE           "owlcms_ref_"
 
 #define DECISION_TOPIC_BASE             "owlcms/decision/"
 #define DECISION_GOOD               0
@@ -54,7 +57,9 @@ static bool wifi_connected;
 static bool net_connected;
 static bool mqtt_connected;
 
-static struct owlcms_config_settings owlcms_settings;
+struct wifi_config_settings wifi_config;
+struct owlcms_config_settings owlcms_config;
+struct mqtt_config_settings mqtt_config;
 static uint8_t *decision_topic;
 static uint8_t decision_topic_len;
 static uint8_t ref_number;
@@ -83,11 +88,10 @@ static void process_comms_cmd(comms_cmd_t cmd)
     else if (cmd == CMD_CONNECT)
     {
         LOG_INF("proc cmd CONNECT");
-        struct wifi_config_settings config;
-        settings_util_load_wifi_config(&config);
-        LOG_DBG("loaded wifi ssid/psk, %s, %s", config.ssid, config.psk);
+        
+
         wifi_conn_reset();
-        wifi_conn_setup(&config);
+        wifi_conn_setup(&wifi_config);
         wifi_conn_connect();
         // k_work_reschedule(&wifi_reset_work, K_NO_WAIT);
         // k_work_reschedule(&wifi_setup_work, K_NO_WAIT);
@@ -105,7 +109,7 @@ static void process_comms_cmd(comms_cmd_t cmd)
     // }
     else if (cmd == CMD_MQTT_START)
     {
-        mqtt_client_setup();
+        mqtt_client_setup(&mqtt_config);
         mqtt_client_start();
         //msys_signal_evt(SYS_EVT_CONN_SUCCESS);
     }
@@ -114,8 +118,12 @@ static void process_comms_cmd(comms_cmd_t cmd)
         LOG_INF("starting ble config mode");
         mqtt_client_teardown();
         wifi_conn_disconnect();
+        struct config_settings settings;
+        settings.wifi = &wifi_config;
+        settings.mqtt = &mqtt_config;
+        settings.owlcms = &owlcms_config;
 
-        ble_config_mgr_start();
+        ble_config_mgr_start(&settings);
     }
     else if (cmd == CMD_CONFIG_STOP)
     {
@@ -142,7 +150,7 @@ void comms_mgr_thread()
     }
 }
 
-int comms_mgr_init()
+int comms_mgr_init(uint8_t device_id)
 {
     k_msgq_init(&comms_cmd_queue, cmd_msg_buf, sizeof(uint8_t), 10);
     wifi_connected = false;
@@ -152,12 +160,24 @@ int comms_mgr_init()
     wifi_conn_init();
     mqtt_client_mod_init();
 
-    ref_number = 1;
-    settings_util_load_owlcms_config(&owlcms_settings);
-    decision_topic_len = strlen(DECISION_TOPIC_BASE) + owlcms_settings.platform_len + 1;
-    decision_topic = k_malloc(sizeof(uint8_t) * decision_topic_len);
-    snprintk(decision_topic, decision_topic_len, "%s%s", DECISION_TOPIC_BASE, owlcms_settings.platform);
+    ref_number = device_id;
+    settings_util_load_owlcms_config(&owlcms_config);
+    settings_util_load_mqtt_config(&mqtt_config);
     
+    uint8_t mqtt_client_name_len = strlen(MQTT_CLIENT_NAME_BASE) + owlcms_config.platform_len + 4;
+    snprintk(mqtt_config.client_name, mqtt_client_name_len, "%s%s_%d", MQTT_CLIENT_NAME_BASE,
+                                                                        owlcms_config.platform,
+                                                                        ref_number);
+    mqtt_config.client_name_len = mqtt_client_name_len;
+
+
+    decision_topic_len = strlen(DECISION_TOPIC_BASE) + owlcms_config.platform_len + 1;
+    decision_topic = k_malloc(sizeof(uint8_t) * decision_topic_len);
+    snprintk(decision_topic, decision_topic_len, "%s%s", DECISION_TOPIC_BASE, owlcms_config.platform);
+    
+    settings_util_load_wifi_config(&wifi_config);
+    LOG_DBG("loaded wifi ssid/psk, %s, %s", wifi_config.ssid, wifi_config.psk);
+
     wifi_conn_set_net_state_cb(&signal_net_state);
     mqtt_client_set_state_cb(&signal_mqtt_state);
 
