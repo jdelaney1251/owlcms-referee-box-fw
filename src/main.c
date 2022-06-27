@@ -6,6 +6,7 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 #include <device.h>
 #include <drivers/gpio.h>
 #include <net/wifi_mgmt.h>
+#include <logging/log_ctrl.h>
 
 #include "io.h"
 #include "msys.h"
@@ -18,13 +19,14 @@ static struct k_thread main_th;
 
 void main(void)
 {
+    log_init();
     LOG_INF("Starting OWLCMS Referee Controller...\n");
 
     k_sleep(K_MSEC(1000));
     int ret = 0;
     ret = io_init();
     ret = settings_util_init();
-    ret = comms_mgr_init();
+    ret = comms_mgr_init(io_get_dev_id());
 
     ret = msys_init();
     msys_run();
@@ -35,7 +37,7 @@ void main(void)
     // leds_cfg.pattern = 0x0A;
     // io_set_leds_cfg(leds_cfg);
 
-    LOG_INF("ID of this device is %d", io_get_dev_id());
+    //LOG_INF("ID of this device is %d", io_get_dev_id());
 
     /*
     struct wifi_connect_req_params wifi_cfg;
@@ -64,7 +66,8 @@ void main(void)
     while(1)
     {
         //printk("tick\n");
-        k_sleep(K_MSEC(1000));
+        if (log_process() == false)
+            k_sleep(K_MSEC(100));
     }
     LOG_INF("main thread exiting");
 }

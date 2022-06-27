@@ -45,9 +45,9 @@ int io_clr_led(uint8_t led);
 int io_buzzer_on();
 int io_buzzer_off();
 
-int io_reg_cb_btn_usr(void (*cb)(uint8_t));
-int io_reg_cb_btn_red(void (*cb)(uint8_t));
-int io_reg_cb_btn_blk(void (*cb)(uint8_t));
+void io_reg_cb_btn_usr(void (*cb)(uint8_t));
+void io_reg_cb_btn_red(void (*cb)(uint8_t));
+void io_reg_cb_btn_blk(void (*cb)(uint8_t));
 
 int io_get_red_btn_state();
 

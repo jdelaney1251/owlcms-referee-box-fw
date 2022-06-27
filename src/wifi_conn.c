@@ -18,6 +18,7 @@ LOG_MODULE_REGISTER(wifi_mod, LOG_LEVEL_DBG);
 #include <esp_timer.h>
 
 #include "wifi_conn.h"
+#include "settings_util.h"
 
 #define IF_MGMT_EVENTS (NET_EVENT_IF_UP                    | \
                         NET_EVENT_IF_DOWN)
@@ -148,15 +149,13 @@ void wifi_conn_reset(struct k_work *work)
 
 }
 
-void wifi_conn_setup(struct k_work *work)
+void wifi_conn_setup(struct wifi_config_settings *params)
 {
     esp_err_t ret;
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = "",
-            .password = "",
-        },
-    };
+    wifi_config_t wifi_config;
+    strcpy(wifi_config.sta.ssid, params->ssid);
+    strcpy(wifi_config.sta.password, params->psk);
+    
 
     ret = esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
     if (ret != 0)

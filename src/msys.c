@@ -3,7 +3,7 @@
 LOG_MODULE_REGISTER(sys_mod, LOG_LEVEL_DBG);
 
 #include <zephyr.h>
-
+#include <zephyr/sys/reboot.h>
 
 
 #include "msys.h"
@@ -22,6 +22,8 @@ typedef enum {
     S_IDLE_CONN,
     S_DECISION_RX,
     S_DECISION_REQ,
+    S_CONFIG,
+    S_CONFIG_END
 } state_t;
 
 typedef enum {
@@ -34,7 +36,9 @@ typedef enum {
     E_DECISION_HANDLED,
     E_DECISION_SEND_ERR,
     E_DECISION_REQ_RX,
-    E_TIMEOUT
+    E_TIMEOUT,
+    E_CONFIG,
+    E_CONFIG_END
 } event_t;
 
 typedef struct {
@@ -66,6 +70,11 @@ void state_func_decision_rx(event_t evt);
 void state_func_decision_rx_entry(event_t evt);
 void state_func_decision_req(event_t evt);
 void state_func_decision_req_entry(event_t evt);
+void state_func_config_entry(event_t evt);
+void state_func_config(event_t evt);
+void state_func_config_end_entry(event_t evt);
+void state_func_config_end(event_t evt);
+
 
 void state_machine_iterate();
 
@@ -73,10 +82,13 @@ static state_trans_matrix_row_t state_trans_matrix[] = {
     {S_PRE_INIT,        E_ANY,             S_INIT           },
     {S_INIT,            E_ANY,             S_IDLE_DCONN     },
     {S_IDLE_DCONN,      E_ANY,             S_CONNECTING     },
+    {S_IDLE_DCONN,      E_CONFIG,          S_CONFIG         },
     {S_CONNECTING,      E_CONN_SUCCESS,    S_IDLE_CONN      },
+    {S_CONNECTING,      E_CONFIG,          S_CONFIG         },
     {S_IDLE_CONN,       E_INP_RED_DECISION,S_DECISION_RX    },
     {S_IDLE_CONN,       E_INP_BLK_DECISION,S_DECISION_RX    },
     {S_IDLE_CONN,       E_DECISION_REQ_RX, S_DECISION_REQ   },
+    {S_IDLE_CONN,       E_CONFIG,          S_CONFIG         },
     {S_DECISION_RX,     E_DECISION_HANDLED,S_IDLE_CONN      },
     {S_DECISION_REQ,    E_TIMEOUT,         S_IDLE_CONN      },
     {S_DECISION_REQ,    E_INP_RED_DECISION,S_DECISION_RX    },
@@ -84,10 +96,13 @@ static state_trans_matrix_row_t state_trans_matrix[] = {
     {S_IDLE_CONN,       E_CONN_LOST,       S_IDLE_DCONN     },
     {S_DECISION_RX,     E_CONN_LOST,       S_IDLE_DCONN     },
     {S_IDLE_CONN,       E_CONN_LOST,       S_IDLE_DCONN     },
-    {S_IDLE_CONN,       E_ANY,             S_IDLE_CONN     }
+    {S_IDLE_CONN,       E_ANY,             S_IDLE_CONN      },
+    {S_CONFIG,          E_ANY,             S_CONFIG         },
+    {S_CONFIG,          E_CONFIG_END,      S_CONFIG_END     },
+    {S_CONFIG_END,      E_ANY,             S_IDLE_DCONN      }
 };
 
-#define STATE_TRANS_MATRIX_NUM_ROWS 15
+#define STATE_TRANS_MATRIX_NUM_ROWS 21
 
 static state_func_row_t state_func_a[] = {
     {"S_PRE_INIT",      &state_func_pre_init     },
@@ -96,7 +111,9 @@ static state_func_row_t state_func_a[] = {
     {"S_CONNECTING",    &state_func_connecting  },
     {"S_IDLE_CONN",     &state_func_idle_conn   },
     {"S_DECISION_RX",   &state_func_decision_rx },
-    {"S_DECISION_REQ",  &state_func_decision_req}
+    {"S_DECISION_REQ",  &state_func_decision_req},
+    {"S_CONFIG",        &state_func_config      },
+    {"S_CONFIG_END",    &state_func_config_end  }
 };
 
 static state_func_row_t state_func_entry[] = {
@@ -106,7 +123,9 @@ static state_func_row_t state_func_entry[] = {
     {"S_CONNECTING",    &state_func_connecting_entry  },
     {"S_IDLE_CONN",     &state_func_idle_conn_entry   },
     {"S_DECISION_RX",   &state_func_decision_rx_entry },
-    {"S_DECISION_REQ",  &state_func_decision_req_entry}
+    {"S_DECISION_REQ",  &state_func_decision_req_entry},
+    {"S_CONFIG",        &state_func_config_entry      },
+    {"S_CONFIG_END",    &state_func_config_end_entry  }
 };
 
 void state_func_pre_init_entry(event_t evt)
@@ -149,7 +168,8 @@ void state_func_connecting_entry(event_t evt)
 }
 
 void state_func_connecting(event_t evt)
-{   
+{
+    
 }
 
 void state_func_idle_conn_entry(event_t evt)
@@ -191,6 +211,30 @@ void state_func_decision_req_entry(event_t evt)
 void state_func_decision_req(event_t evt)
 {
     
+}
+
+void state_func_config_entry(event_t evt)
+{
+    LOG_DBG("Enter config state e:%d", evt);
+    io_mgr_set_leds_config();
+    comms_mgr_start_config();
+}
+
+void state_func_config(event_t evt)
+{
+
+}
+
+void state_func_config_end_entry(event_t evt)
+{
+    LOG_DBG("Enter config end state");
+    comms_mgr_end_config();
+    sys_reboot(SYS_REBOOT_COLD);
+}
+
+void state_func_config_end(event_t evt)
+{
+    LOG_DBG("config end evt: %d", evt);
 }
 
 void state_machine_iterate(state_machine_t *state_machine, event_t evt)
