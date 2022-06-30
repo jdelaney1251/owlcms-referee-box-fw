@@ -235,10 +235,7 @@ void write_empty_setting(setting_entry_t *entry)
     //     entry->data = (uint16_t)0;
     // }
 
-    for (uint8_t i = 0; i < entry->data_len; i++)
-    {
-        memset(entry->data++, 0, entry->data_len);
-    }
+    memset(entry->data, 0, entry->data_len);
 
     nvs_write(&fs, entry->id, entry->data, entry->data_len);
 }
