@@ -8,6 +8,7 @@ LOG_MODULE_REGISTER(mqtt_client_mod, LOG_LEVEL_DBG);
 
 #include "settings_util.h"
 #include "mqtt_client.h"
+#include "comms_mgr.h"
 
 #ifndef MQTT_BUFFER_SIZE
 #define MQTT_BUFFER_SIZE        256
@@ -181,6 +182,7 @@ int mqtt_client_start()
         {
             LOG_ERR("connect failed, aborting...");
             mqtt_client_teardown();
+            mqtt_state_cb(MQTT_STATE_DISCONNECTED);
         }
     }
 
@@ -193,6 +195,12 @@ int mqtt_client_start()
                         mqtt_client_thread,
                         NULL, NULL, NULL,
                         6, 0, K_NO_WAIT);
+    }
+    else 
+    {
+            LOG_ERR("connect failed, aborting...");
+            mqtt_client_teardown();
+            mqtt_state_cb(MQTT_STATE_DISCONNECTED);
     }
 
     return 0;

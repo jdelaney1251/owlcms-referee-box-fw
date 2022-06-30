@@ -84,6 +84,7 @@ static state_trans_matrix_row_t state_trans_matrix[] = {
     {S_IDLE_DCONN,      E_ANY,             S_CONNECTING     },
     {S_IDLE_DCONN,      E_CONFIG,          S_CONFIG         },
     {S_CONNECTING,      E_CONN_SUCCESS,    S_IDLE_CONN      },
+    {S_CONNECTING,      E_CONN_LOST,       S_IDLE_DCONN     },
     {S_CONNECTING,      E_CONFIG,          S_CONFIG         },
     {S_IDLE_CONN,       E_INP_RED_DECISION,S_DECISION_RX    },
     {S_IDLE_CONN,       E_INP_BLK_DECISION,S_DECISION_RX    },
@@ -102,7 +103,7 @@ static state_trans_matrix_row_t state_trans_matrix[] = {
     {S_CONFIG_END,      E_ANY,             S_IDLE_DCONN      }
 };
 
-#define STATE_TRANS_MATRIX_NUM_ROWS 21
+#define STATE_TRANS_MATRIX_NUM_ROWS 22
 
 static state_func_row_t state_func_a[] = {
     {"S_PRE_INIT",      &state_func_pre_init     },

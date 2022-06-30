@@ -50,12 +50,16 @@ static void net_mgmt_event_handler(struct net_mgmt_event_callback *cb,
                                     uint32_t mgmt_event,
                                     struct net_if *iface)
 {
-    LOG_INF("net mgmt handler, evt:%d", mgmt_event);
+    LOG_INF("net mgmt handler, evt:%d %d", mgmt_event, NET_EVENT_ETHERNET_CARRIER_ON);
     switch (mgmt_event)
     {
     case NET_EVENT_IF_UP:
+        LOG_INF("if up evt");
+        handle_wifi_connect();
         break;
     case NET_EVENT_IF_DOWN:
+        LOG_INF("if dn evt");
+        handle_wifi_disconnect();
         break;
     case NET_EVENT_ETHERNET_CARRIER_ON:
         handle_wifi_connect();
@@ -152,12 +156,15 @@ void wifi_conn_reset(struct k_work *work)
 void wifi_conn_setup(struct wifi_config_settings *params)
 {
     esp_err_t ret;
-    wifi_config_t wifi_config;
-    strcpy(wifi_config.sta.ssid, params->ssid);
-    strcpy(wifi_config.sta.password, params->psk);
-    
-
-    ret = esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
+    wifi_config_t cfg = {
+        .sta = {
+            .ssid = " ",
+            .password = " "
+        }
+    };
+    strcpy(cfg.sta.ssid, params->ssid);
+    strcpy(cfg.sta.password, params->psk);
+    ret = esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg);
     if (ret != 0)
     {
         LOG_ERR("Failed to configure wifi");

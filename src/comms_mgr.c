@@ -89,10 +89,18 @@ static void process_comms_cmd(comms_cmd_t cmd)
     {
         LOG_INF("proc cmd CONNECT");
         
-
-        wifi_conn_reset();
-        wifi_conn_setup(&wifi_config);
-        wifi_conn_connect();
+        if (wifi_connected && net_connected)
+        {
+            LOG_DBG("wifi already conn, starting mqtt");
+            comms_mgr_signal_cmd(CMD_MQTT_START);
+        }
+        else 
+        {
+            LOG_DBG("starting wifi");
+            wifi_conn_reset();
+            wifi_conn_setup(&wifi_config);
+            wifi_conn_connect();
+        }
         // k_work_reschedule(&wifi_reset_work, K_NO_WAIT);
         // k_work_reschedule(&wifi_setup_work, K_NO_WAIT);
         // k_work_reschedule(&wifi_connect_work, K_NO_WAIT);
@@ -176,7 +184,6 @@ int comms_mgr_init(uint8_t device_id)
     snprintk(decision_topic, decision_topic_len, "%s%s", DECISION_TOPIC_BASE, owlcms_config.platform);
     
     settings_util_load_wifi_config(&wifi_config);
-    LOG_DBG("loaded wifi ssid/psk, %s, %s", wifi_config.ssid, wifi_config.psk);
 
     wifi_conn_set_net_state_cb(&signal_net_state);
     mqtt_client_set_state_cb(&signal_mqtt_state);
@@ -282,6 +289,7 @@ void signal_mqtt_state(uint8_t mqtt_state)
     }
     else if (mqtt_state == MQTT_STATE_DISCONNECTED)
     {
-        // TODO: handle mqtt connection loss
+        LOG_INF("MQTT disconnected, trying again");
+        msys_signal_evt(SYS_EVT_CONN_LOST);
     }
 }
