@@ -42,6 +42,17 @@ LOG_MODULE_REGISTER(mqtt_client_mod, LOG_LEVEL_DBG);
 
 #define MQTT_CLIENT_TICK_PERIOD                 10000
 
+#define MQTT_PUB_PLD_MAX_LEN                    32
+
+struct mqtt_sub_topic_handler {
+    sys_snode_t node;
+    char *topic;
+    void (*handler)(uint8_t *msg, uint8_t msg_len); 
+};
+static struct mqtt_sub_topic_handler sub_topic_handler_list[5];
+static uint8_t num_mqtt_sub_topics = 0;
+static uint8_t sub_rx_data_buffer[MQTT_PUB_PLD_MAX_LEN];
+
 static uint8_t rx_buffer[MQTT_BUFFER_SIZE];
 static uint8_t tx_buffer[MQTT_BUFFER_SIZE];
 
@@ -60,11 +71,19 @@ struct k_work_delayable mqtt_client_input_work;
 
 struct k_thread mqtt_client_th;
 K_THREAD_STACK_DEFINE(mqtt_client_th_stack, 2096);
+struct k_thread mqtt_msg_th;
+K_THREAD_STACK_DEFINE(mqtt_msg_th_stack, 2096);
+
+static struct k_msgq pub_msgq;
+static struct mqtt_publish_message pub_msgs[5];
 
 static void mqtt_client_live();
 static void mqtt_client_input();
 static void mqtt_client_thread();
 static void setup_socket_fds();
+static void queue_pub_msg(struct mqtt_publish_message msg);
+static void mqtt_msg_thread();
+static void process_pub_msg(struct mqtt_publish_message *msg);
 
 void mqtt_client_set_state_cb(void (*cb)(uint8_t mqtt_state));
 
@@ -95,6 +114,24 @@ void mqtt_evt_handler(struct mqtt_client *client,
     case MQTT_EVT_PINGRESP:
         LOG_INF("pingresp received");
         //k_work_schedule(&mqtt_client_live_work, K_MSEC(MQTT_CLIENT_PING_TIMEOUT));
+        break;
+    case MQTT_EVT_PUBLISH: {
+        const struct mqtt_publish_param *pub = &evt->param.publish;
+        LOG_INF("publish rx");
+        if (pub->message.topic.qos == MQTT_QOS_1_AT_LEAST_ONCE)
+        {
+            struct mqtt_puback_param puback = { .message_id = pub->message_id };
+            (void)mqtt_publish_qos1_ack(client, &puback);
+        }
+        
+        if (pub->message.payload.len < MQTT_PUB_PLD_MAX_LEN)
+        {
+            mqtt_read_publish_payload(client, sub_rx_data_buffer, MQTT_PUB_PLD_MAX_LEN);
+            LOG_INF("pld buf: %s", sub_rx_data_buffer);
+            process_pub_msg(&pub->message);
+        }
+        break;
+    }
     default:
         LOG_INF("mqtt evt: %d", evt->type);
         break;
@@ -116,14 +153,12 @@ int mqtt_client_mod_init()
 
     k_work_init_delayable(&mqtt_client_live_work, mqtt_client_live);
     k_work_init_delayable(&mqtt_client_input_work, mqtt_client_input);
+
+    k_msgq_init(&pub_msgq, &pub_msgs, sizeof(struct mqtt_publish_message), 5);
 }
 
 int mqtt_client_setup(struct mqtt_config_settings *config)
 {
-    
-
-    
-
     LOG_INF("starting");
     mqtt_client_init(&client);
     LOG_INF("setting up client addr at %s", config->broker_addr);
@@ -195,6 +230,11 @@ int mqtt_client_start()
                         mqtt_client_thread,
                         NULL, NULL, NULL,
                         6, 0, K_NO_WAIT);
+        k_thread_create(&mqtt_msg_th, mqtt_msg_th_stack,
+                        K_THREAD_STACK_SIZEOF(mqtt_msg_th_stack),
+                        mqtt_msg_thread,
+                        NULL, NULL, NULL,
+                        6, 0, K_NO_WAIT);
     }
     else 
     {
@@ -232,6 +272,33 @@ static void mqtt_client_thread()
     }
 }
 
+static void mqtt_msg_thread()
+{
+    int ret = 0;
+    struct mqtt_publish_message msg;
+
+    while (1)
+    {
+        ret = k_msgq_get(&pub_msgq, &msg, K_MSEC(100));
+        if (ret == 0)
+        {
+            process_pub_msg(&msg);
+        }
+
+        k_yield();
+    }
+}
+
+static void process_pub_msg(struct mqtt_publish_message *msg)
+{
+    for (uint8_t i = 0; i < num_mqtt_sub_topics; i++)
+    {
+        if (strcmp(msg->topic.topic.utf8, sub_topic_handler_list[i].topic) == 0)
+        {
+            LOG_INF("rx msg for topic: %s", msg->topic.topic.utf8);
+            sub_topic_handler_list[i].handler(sub_rx_data_buffer, msg->payload.len);
+        }
+    }
 
 int mqtt_client_teardown()
 {
@@ -304,4 +371,28 @@ int mqtt_client_publish(   enum mqtt_qos qos,
 void mqtt_client_set_state_cb(void (*cb)(uint8_t mqtt_state))
 {
     mqtt_state_cb = cb;
+}
+
+int mqtt_client_subscribe(const char *topic, void (*handler)(uint8_t *msg, uint8_t msg_len))
+{
+    if (handler != NULL)
+    {
+        sub_topic_handler_list[num_mqtt_sub_topics].topic = k_malloc(sizeof(char) * strlen(topic));
+        strcpy(sub_topic_handler_list[num_mqtt_sub_topics].topic, topic);
+        sub_topic_handler_list[num_mqtt_sub_topics].handler = handler;
+
+        struct mqtt_subscription_list subs;
+        subs.list = k_malloc(sizeof(struct mqtt_topic));
+        subs.list->topic.utf8 = topic;
+        subs.list->topic.size = strlen(topic);
+        subs.list->qos = 0;
+        subs.list_count = 1;
+        subs.message_id = num_mqtt_sub_topics + 1;
+
+        mqtt_subscribe(&client, &subs);
+        num_mqtt_sub_topics++;
+
+        return 0;
+    }
+    return -EINVAL;
 }

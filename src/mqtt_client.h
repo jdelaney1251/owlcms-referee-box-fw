@@ -11,7 +11,7 @@ int mqtt_client_publish(enum mqtt_qos qos,
                             uint32_t topic_len,
                             uint8_t *data, 
                             uint32_t data_len);
-int mqtt_client_subscribe(const char *topic, void (*handler)(uint8_t *topic, uint8_t *msg));
+int mqtt_client_subscribe(const char *topic, void (*handler)(uint8_t *msg, uint8_t msg_len));
 int mqtt_client_setup();
 int mqtt_client_start();
 

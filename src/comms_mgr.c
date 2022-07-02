@@ -35,8 +35,9 @@ LOG_MODULE_REGISTER(comms_mgr, LOG_LEVEL_DBG);
 
 static const char *decision_msg[] = {"good", "bad"};
 
+#define STARTUP_TOPIC_BASE              "owlcms/led/"
 #define SUMMON_TOPIC_BASE               "owlcms/summon/"
-#define DECISION_REQ_BASE               "owlcms/decisionRequest/"
+#define DECISION_REQ_TOPIC_BASE         "owlcms/decisionRequest/"
 
 
 typedef enum {
@@ -63,6 +64,9 @@ struct mqtt_config_settings mqtt_config;
 static uint8_t *decision_topic;
 static uint8_t decision_topic_len;
 static uint8_t ref_number;
+static uint8_t *startup_topic;
+static uint8_t *summon_topic;
+static uint8_t *decision_req_topic;
 
 static struct k_work_delayable wifi_connect_work;
 static struct k_work_delayable wifi_disconnect_work;
@@ -74,6 +78,11 @@ static void process_comms_cmd(comms_cmd_t cmd);
 void signal_net_state(uint8_t wifi_state, uint8_t net_state);
 void signal_mqtt_state(uint8_t mqtt_state);
 static int comms_mgr_signal_cmd(comms_cmd_t cmd);
+static void setup_mqtt_topics();
+
+static void handle_startup_msg(uint8_t *msg, uint8_t msg_len);
+static void handle_summon_msg(uint8_t *msg, uint8_t msg_len);
+static void handle_decision_req_msg(uint8_t *msg, uint8_t msg_len);
 
 static void process_comms_cmd(comms_cmd_t cmd)
 {
@@ -285,11 +294,55 @@ void signal_mqtt_state(uint8_t mqtt_state)
     }
     else if (mqtt_state == MQTT_STATE_CONNECTED)
     {
+        setup_mqtt_topics();
         msys_signal_evt(SYS_EVT_CONN_SUCCESS);
     }
     else if (mqtt_state == MQTT_STATE_DISCONNECTED)
     {
         LOG_INF("MQTT disconnected, trying again");
         msys_signal_evt(SYS_EVT_CONN_LOST);
+    }
+}
+
+static void setup_mqtt_topics()
+{
+    uint8_t startup_topic_len = strlen(STARTUP_TOPIC_BASE) + owlcms_config.platform_len + 2;
+    uint8_t summon_topic_len = strlen(SUMMON_TOPIC_BASE) + owlcms_config.platform_len + 4;
+    uint8_t decision_req_topic_len = strlen(DECISION_REQ_TOPIC_BASE) + owlcms_config.platform_len + 4;
+
+    startup_topic = k_malloc(sizeof(char) * startup_topic_len);
+    summon_topic = k_malloc(sizeof(char) * summon_topic_len);
+    decision_req_topic = k_malloc(sizeof(char) * decision_req_topic_len);
+
+    snprintk(startup_topic, startup_topic_len, "%s%s", STARTUP_TOPIC_BASE, owlcms_config.platform);
+    snprintk(summon_topic, summon_topic_len, "%s%s/%d", SUMMON_TOPIC_BASE, owlcms_config.platform, ref_number);
+    snprintk(decision_req_topic, decision_req_topic_len, "%s%s/%d", DECISION_REQ_TOPIC_BASE, owlcms_config.platform, ref_number);
+    LOG_INF("%s %d", startup_topic, startup_topic_len);
+    mqtt_client_subscribe(startup_topic, handle_startup_msg);
+    mqtt_client_subscribe(summon_topic, handle_summon_msg);
+    mqtt_client_subscribe(decision_req_topic, handle_decision_req_msg);
+}
+
+static void handle_startup_msg(uint8_t *msg, uint8_t msg_len)
+{
+    if (strncmp(msg, "on", msg_len) == 0 && msg_len > 0)
+    {
+        LOG_INF("device received startup msg, %s, len: %d", msg, msg_len);
+    }
+}
+
+static void handle_summon_msg(uint8_t *msg, uint8_t msg_len)
+{
+    if (strncmp(msg, "on", msg_len) == 0 && msg_len > 0)
+    {
+        LOG_INF("device received summon msg, %s, len: %d", msg, msg_len);
+    }
+}
+
+static void handle_decision_req_msg(uint8_t *msg, uint8_t msg_len)
+{
+    if (strncmp(msg, "on", msg_len) == 0 && msg_len > 0)
+    {
+        LOG_INF("device received decision req msg, %s, len: %d", msg, msg_len);
     }
 }
