@@ -91,12 +91,12 @@ static btn_state_t btn_state_data[NUM_BTNS];
 void (*btn_evt_handlers[NUM_BTNS])(uint8_t);
 void (*btn_blk_cb)(uint8_t evt_type);
 struct k_thread btn_evt_th;
-K_THREAD_STACK_DEFINE(btn_evt_thread_stack, 10000);
+K_THREAD_STACK_DEFINE(btn_evt_thread_stack, 1024);
 static struct k_mutex btn_state_data_mutex;
 void (*btn_evt_cb)(uint8_t btn_id, uint8_t btn_evt);
 
 struct k_thread led_mgmt_th;
-K_THREAD_STACK_DEFINE(led_mgmt_thread_stack, 2048);
+K_THREAD_STACK_DEFINE(led_mgmt_thread_stack, 1024);
 
 //static struct k_mutex leds_cfg_lock;
 //static struct k_mutex buzzer_cfg_lock;

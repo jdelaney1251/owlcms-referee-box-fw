@@ -271,7 +271,7 @@ void state_machine_iterate(state_machine_t *state_machine, event_t evt)
 
 #define SIGNAL_EVT_MAX_RETRIES          10
 static struct k_thread msys_th;
-K_THREAD_STACK_DEFINE(msys_thread_stack, 10000);
+K_THREAD_STACK_DEFINE(msys_thread_stack, 2048);
 
 static struct k_msgq  msys_evt_queue;
 char __aligned(1) evt_msg_buf[10 * sizeof(event_t)];
