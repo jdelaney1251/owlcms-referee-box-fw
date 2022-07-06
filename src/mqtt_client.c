@@ -299,6 +299,7 @@ static void process_pub_msg(struct mqtt_publish_message *msg)
             sub_topic_handler_list[i].handler(sub_rx_data_buffer, msg->payload.len);
         }
     }
+}
 
 int mqtt_client_teardown()
 {
