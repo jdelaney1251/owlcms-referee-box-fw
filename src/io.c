@@ -1,10 +1,11 @@
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(io_mod, LOG_LEVEL_ERR);
+LOG_MODULE_REGISTER(io_mod, LOG_LEVEL_DBG);
 
-#include <zephyr.h>
-#include <device.h>
-#include <drivers/gpio.h>
+#include <zephyr/zephyr.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/pwm.h>
 #include "io.h"
 
 
@@ -53,7 +54,7 @@ static const struct gpio_dt_spec sw_id[] = {  GPIO_DT_SPEC_GET(SW_ID0, gpios),
                                             GPIO_DT_SPEC_GET(SW_ID1, gpios),
                                             GPIO_DT_SPEC_GET(SW_ID2, gpios)};
 
-static const struct gpio_dt_spec buzzer = GPIO_DT_SPEC_GET(BZR_0, gpios);
+static const struct pwm_dt_spec buzzer = PWM_DT_SPEC_GET(BZR_0);
 
 
 #define BTN_USR_ID              0
@@ -73,8 +74,8 @@ static const struct gpio_dt_spec buzzer = GPIO_DT_SPEC_GET(BZR_0, gpios);
 #define BTN_DEBOUNCE_TIME_MS    10
 #define BTN_EVT_TICK_PERIOD_MS  5
 
-
-
+#define BZR_PERIOD_NS           1000000U // 1kHz
+#define BZR_PULSE_WIDTH_NS      BZR_PERIOD_NS / 2U
 
 struct gpio_callback btn_cb_data[NUM_BTNS];
 
@@ -102,8 +103,6 @@ K_THREAD_STACK_DEFINE(led_mgmt_thread_stack, 1024);
 //static struct k_mutex buzzer_cfg_lock;
 static struct k_msgq leds_cfg_queue;
 static char __aligned(2) leds_cfg_msg_buf[5 * sizeof(leds_cfg_t)];
-static struct k_msgq buzzer_cfg_queue;
-static char __aligned(2) buzzer_cfg_msg_buf[5 * sizeof(buzzer_cfg_t)];
 
 int io_led_bits_set(uint8_t led_bits);
 int io_led_bits_toggle(uint8_t led_bits);
@@ -375,24 +374,19 @@ int init_dev_id_sw()
 int init_buzzer()
 {
     int ret = 0;
-    if (buzzer.port == NULL)
+    if (!device_is_ready(buzzer.dev))
     {
-        LOG_ERR("Failed to initialise GPIO device for buzzer");
-        return -EIO;
-    }
-
-    ret = gpio_pin_configure_dt(&buzzer, GPIO_OUTPUT);
-    if (ret != 0)
-    {
-        LOG_ERR("Failed to configure IO pin for buzzer");
-        return -EIO;
+        LOG_ERR("Failed to initialise PWM device for buzzer");
+        return EIO;
     }
 
     // make sure the buzzer is definitely off for good measure...
-    gpio_pin_set_dt(&buzzer, 0);
-
-    k_msgq_init(&buzzer_cfg_queue, buzzer_cfg_msg_buf, 
-                        sizeof(buzzer_cfg_t), 5);
+    ret = pwm_set_dt(&buzzer, 0, 0);
+    if (ret != 0)
+    {
+        LOG_ERR("Failed to set initial buzzer PWM config");
+        return -EIO;
+    }
 
     return ret;
 }
@@ -498,4 +492,28 @@ void io_reg_cb_btn_red(void (*cb)(uint8_t))
 void io_reg_cb_btn_blk(void (*cb)(uint8_t))
 {
     btn_evt_handlers[BTN_BLK_ID] = cb;
+}
+
+int io_buzzer_on()
+{
+    int ret = 0;
+    LOG_DBG("turning buzzer on");
+    ret = pwm_set_dt(&buzzer, BZR_PERIOD_NS, BZR_PULSE_WIDTH_NS);
+    if (ret != 0)
+    {
+        LOG_ERR("Failed to turn buzzer on, ret: %d", ret);
+    }
+    return ret;
+}
+
+int io_buzzer_off()
+{
+    int ret = 0;
+    LOG_DBG("turning buzzer off");
+    ret = pwm_set_dt(&buzzer, BZR_PERIOD_NS, 0);
+    if (ret != 0)
+    {
+        LOG_ERR("Failed to turn buzzer off, ret: %d", ret);
+    }
+    return ret;
 }
