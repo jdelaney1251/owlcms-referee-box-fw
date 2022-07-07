@@ -9,5 +9,7 @@ int io_mgr_set_leds_disable();
 
 int io_mgr_set_leds_config();
 
+int io_mgr_buzzer_trig();
+
 
 #endif

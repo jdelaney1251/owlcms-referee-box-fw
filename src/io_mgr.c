@@ -8,7 +8,11 @@ LOG_MODULE_REGISTER(io_mgr, LOG_LEVEL_DBG);
 #include "io.h"
 #include "msys.h"
 
+#define BUZZER_ON_PERIOD_MS            1000
+
 static struct k_work_delayable leds_disable_work;
+
+static struct k_work_delayable buzzer_off_work;
 
 static const leds_cfg_t leds_cfg_connecting = {
     .cfg_type = LED_CFG_TYPE_BLINK_ALT,
@@ -39,6 +43,10 @@ static void leds_disable_work_fn(struct k_work *work)
     io_mgr_set_leds_disable();
 }
 
+static void buzzer_off_work_fn(struct k_work *work)
+{
+    io_buzzer_off();
+}
 
 int io_mgr_init()
 {
@@ -48,7 +56,7 @@ int io_mgr_init()
     io_reg_cb_btn_blk(&btn_blk_handler);
 
     k_work_init_delayable(&leds_disable_work, leds_disable_work_fn);
-
+    k_work_init_delayable(&buzzer_off_work, buzzer_off_work_fn);
 }
 
 int io_mgr_set_leds_config()
@@ -77,6 +85,13 @@ int io_mgr_set_leds_bat_level()
 int io_mgr_set_leds_disable()
 {
     return io_set_leds_cfg(leds_cfg_disable);
+}
+
+int io_mgr_buzzer_trig()
+{
+    io_buzzer_on();
+
+    k_work_reschedule(&buzzer_off_work, K_MSEC(BUZZER_ON_PERIOD_MS));
 }
 
 void btn_usr_handler(uint8_t evt_type)
