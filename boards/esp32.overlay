@@ -1,3 +1,6 @@
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include <dt-bindings/pinctrl/esp32-pinctrl.h>
+
 / {
     aliases {
         led0 = &led0;
@@ -10,6 +13,7 @@
         sw-id-0 = &id0;
         sw-id-1 = &id1;
         sw-id-2 = &id2;
+        pwm-0 = &ledc0;
         bzr0 = &bzr0;
     };
 
@@ -76,10 +80,9 @@
     };
 
     bzr-out {
-        compatible = "gpio-leds";
-        status = "okay";
-        bzr0: bzr_0 {
-            gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;
+        compatible = "pwm-leds";
+        bzr0: pwm_led_gpio0_23 {
+            pwms = <&ledc0 0 1000 PWM_POLARITY_NORMAL>;
             label = "BZR_0";
         };
     };
@@ -91,4 +94,26 @@
 
 &spi3 {
     status = "disabled";
+};
+
+&pinctrl {
+	ledc0_default: ledc0_default {
+		group1 {
+			// pinmux = <ESP32_PINMUX(23, ESP_NOSIG, ESP_LEDC_HS_SIG_OUT0)>;
+            pinmux = <LEDC_CH0_GPIO23>;
+			output-enable;
+		};
+	};
+};
+
+&ledc0 {
+    pinctrl-0 = <&ledc0_default>;
+    pinctrl-names = "default";
+	status = "okay";
+    #address-cells = <1>;
+    #size-cells = <0>;
+    channel0@0 {
+        reg = <0x0>;
+        timer = <0>;
+    };
 };
