@@ -302,6 +302,8 @@ int settings_util_init()
     }
     
     load_or_create_settings();
+
+    return 0;
 }
 
 int settings_util_load_wifi_config(struct wifi_config_settings *params)

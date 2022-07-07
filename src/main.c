@@ -1,6 +1,6 @@
 #include <logging/log.h>
 
-LOG_MODULE_REGISTER(main, LOG_LEVEL_ERR);
+LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
 #include <zephyr/zephyr.h>
 #include <zephyr/device.h>
