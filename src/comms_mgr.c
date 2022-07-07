@@ -24,6 +24,7 @@ LOG_MODULE_REGISTER(comms_mgr, LOG_LEVEL_DBG);
 #include "msys.h"
 #include "ble_config_mgr.h"
 #include "config_gatt_service.h"
+#include "io_mgr.h"
 
 #define SIGNAL_CMD_MAX_RETRIES          10
 
@@ -328,6 +329,7 @@ static void handle_startup_msg(uint8_t *msg, uint8_t msg_len)
     if (strncmp(msg, "on", msg_len) == 0 && msg_len > 0)
     {
         LOG_INF("device received startup msg, %s, len: %d", msg, msg_len);
+        io_mgr_buzzer_trig();
     }
 }
 
@@ -336,6 +338,7 @@ static void handle_summon_msg(uint8_t *msg, uint8_t msg_len)
     if (strncmp(msg, "on", msg_len) == 0 && msg_len > 0)
     {
         LOG_INF("device received summon msg, %s, len: %d", msg, msg_len);
+        io_mgr_buzzer_trig();
     }
 }
 
@@ -344,5 +347,6 @@ static void handle_decision_req_msg(uint8_t *msg, uint8_t msg_len)
     if (strncmp(msg, "on", msg_len) == 0 && msg_len > 0)
     {
         LOG_INF("device received decision req msg, %s, len: %d", msg, msg_len);
+        io_mgr_buzzer_trig();
     }
 }
