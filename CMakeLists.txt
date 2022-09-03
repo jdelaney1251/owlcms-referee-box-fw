@@ -13,6 +13,6 @@ target_sources(app PRIVATE
                 src/comms_mgr.c
                 src/wifi_conn.c
                 src/mqtt_client.c
-                src/ble_config_mgr.c
-                src/config_gatt_service.c
+                # src/ble_config_mgr.c
+                # src/config_gatt_service.c
                 src/uart_config_mgr.c)
