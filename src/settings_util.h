@@ -24,6 +24,12 @@ struct owlcms_config_settings {
     uint8_t platform_len;
 };
 
+struct config_settings {
+    struct wifi_config_settings *wifi;
+    struct mqtt_config_settings *mqtt;
+    struct owlcms_config_settings *owlcms;
+};
+
 int settings_util_init();
 
 int settings_util_load_wifi_config(struct wifi_config_settings *params);

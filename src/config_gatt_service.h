@@ -9,11 +9,6 @@
 #define CHAR_UUID_VAL_WIFI_SSID             BT_UUID_DECLARE_16(0xb0001)
 #define CHAR_UUID_VAL_WIFI_PSK              BT_UUID_DECLARE_16(0xb0002)
 
-struct config_settings {
-    struct wifi_config_settings *wifi;
-    struct mqtt_config_settings *mqtt;
-    struct owlcms_config_settings *owlcms;
-};
 
 void config_gatt_service_init(struct config_settings *config);
 void config_gatt_service_remove();

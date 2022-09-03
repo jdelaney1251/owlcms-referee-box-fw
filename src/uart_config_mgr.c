@@ -88,12 +88,12 @@ static uint8_t owlcms_platform_name[32] = {};
 #define NUM_PARAMS              6
 
 static config_params_t config_params[NUM_PARAMS] = {
-    { "wifi_ssid",              &wifi_ssid              },
-    { "wifi_psk",               &wifi_psk               },
-    { "mqtt_srv",               &mqtt_srv               },
-    { "mqtt_port",              &mqtt_port              },
-    { "mqtt_client_name",       &mqtt_client_name       },
-    { "owlcms_platform_name",   &owlcms_platform_name   },
+    { "wifi_ssid",              wifi_ssid              },
+    { "wifi_psk",               wifi_psk               },
+    { "mqtt_srv",               mqtt_srv               },
+    { "mqtt_port",              mqtt_port              },
+    { "mqtt_client_name",       mqtt_client_name       },
+    { "owlcms_platform_name",   owlcms_platform_name   },
 };
 
 static uint8_t *get_config_param(const char *param, uint8_t len);
@@ -120,7 +120,7 @@ static uint8_t *get_config_param(const char *param, uint8_t len)
 
 int uart_config_mgr_init()
 {
-    log_backend_uart = log_backend_get_by_name(LOG_BACKEND_DEFINE);
+    log_backend_uart = log_backend_get_by_name(UART_LOG_BACKEND);
 
     k_work_init_delayable(&uart_proc_work, uart_pkt_proc);
 
@@ -140,7 +140,7 @@ int uart_config_mgr_init()
         return -1;
     }
 
-    uart_irq_callback_enable(uart_dev);
+    uart_irq_callback_set(uart_dev, uart_rx_irq);
     uart_irq_rx_enable(uart_dev);
 }
 
@@ -353,6 +353,7 @@ void uart_pkt_proc()
 uint8_t proc_read_cmd(uint8_t *buf, uint8_t buf_len, uint8_t *rsp_buf)
 {
     uint8_t rsp_len = 0;
+    uint8_t *param = NULL;
     // search through config params for a matching name
     param = get_config_param(buf, buf_len);
     if (param != NULL)
@@ -378,6 +379,7 @@ uint8_t proc_write_cmd(uint8_t *buf)
     // extract the param_len and data_len bytes from the packet
     uint8_t param_len = buf[0];
     uint8_t data_len = buf[1];
+    uint8_t *param = NULL;
     // search through the list of config params for a matching name
     param = get_config_param(buf+2, param_len);
     if (param != NULL)
