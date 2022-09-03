@@ -17,14 +17,22 @@ LOG_MODULE_REGISTER(comms_mgr, LOG_LEVEL_DBG);
 #include <esp_event.h>
 #include <esp_timer.h>
 
+#include "device_config.h"
 #include "comms_mgr.h"
 #include "wifi_conn.h"
 #include "mqtt_client.h"
 #include "settings_util.h"
 #include "msys.h"
+#include "io_mgr.h"
+
+#if (ENABLE_BLE_CONFIG == 1)
 #include "ble_config_mgr.h"
 #include "config_gatt_service.h"
-#include "io_mgr.h"
+#endif
+
+#if (ENABLE_UART_CONFIG == 1)
+#include "uart_config_mgr.h"
+#endif
 
 #define SIGNAL_CMD_MAX_RETRIES          10
 
@@ -136,18 +144,21 @@ static void process_comms_cmd(comms_cmd_t cmd)
         LOG_INF("starting ble config mode");
         mqtt_client_teardown();
         wifi_conn_disconnect();
+#if (ENABLE_BLE_CONFIG == 1)
         struct config_settings settings;
         settings.wifi = &wifi_config;
         settings.mqtt = &mqtt_config;
         settings.owlcms = &owlcms_config;
 
         ble_config_mgr_start(&settings);
+#endif
     }
     else if (cmd == CMD_CONFIG_STOP)
     {
+#if (ENABLE_BLE_CONFIG == 1)
         ble_config_mgr_stop();
+#endif
     }
-
 }
 
 void comms_mgr_thread()
@@ -177,6 +188,9 @@ int comms_mgr_init(uint8_t device_id)
 
     wifi_conn_init();
     mqtt_client_mod_init();
+#if (ENABLE_UART_CONFIG == 1)
+    uart_config_mgr_init();
+#endif
 
     ref_number = device_id;
     settings_util_load_owlcms_config(&owlcms_config);
