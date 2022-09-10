@@ -340,8 +340,12 @@ void uart_pkt_proc()
         LOG_INF("err");
     }
 
-    // send the response packet out over the uart device
-    uart_write_pkt(uart_dev, rsp_pkt);
+    if (config_mgr_running)
+    {
+        // send the response packet out over the uart device
+        // only while in config mode
+        uart_write_pkt(uart_dev, rsp_pkt);
+    }
 }
 
 uint8_t proc_read_cmd(uint8_t *buf, uint8_t buf_len, uint8_t *rsp_buf)
