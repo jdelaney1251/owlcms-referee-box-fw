@@ -8,6 +8,7 @@ LOG_MODULE_REGISTER(uart_config_mgr, LOG_LEVEL_DBG);
 #include "msys.h"
 #include "settings_util.h"
 #include "stdlib.h"
+#include "device_config.h"
 
 
 #define UART_LOG_BACKEND        "log_backend_uart"
@@ -52,7 +53,7 @@ LOG_MODULE_REGISTER(uart_config_mgr, LOG_LEVEL_DBG);
 #define UART_CMD_RSP_CRC_ERR        0xBC
 
 static const struct log_backend *log_backend_uart;
-static const struct device *uart_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_shell_uart));
+static const struct device *uart_dev = DEVICE_DT_GET(UART_CONFIG_DEV_NAME_DT);
 static struct k_work_delayable uart_proc_work;
 static uint8_t uart_rx_msg_buf[BUF_SIZE];
 static uint8_t uart_rx_buf_pos;
@@ -123,7 +124,7 @@ static uint8_t *get_config_param(const char *param, uint8_t len)
 
 int uart_config_mgr_init()
 {
-    log_backend_uart = log_backend_get_by_name(UART_LOG_BACKEND);
+    // log_backend_uart = log_backend_get_by_name(UART_LOG_BACKEND);
 
     k_work_init_delayable(&uart_proc_work, uart_pkt_proc);
 
@@ -157,7 +158,7 @@ int uart_config_mgr_start()
         // disable uart logging after a short delay
         LOG_INF("config enable");
         k_sleep(K_MSEC(100));
-        log_backend_disable(log_backend_uart);
+        // log_backend_disable(log_backend_uart);
 
         // load settings data from nvm util
         settings_util_load_wifi_config(settings.wifi);
@@ -188,26 +189,11 @@ int uart_config_mgr_stop()
 {
     if (config_mgr_running)
     {
-        log_backend_enable(log_backend_uart,
-                           log_backend_uart->cb->ctx,
-                           LOG_LEVEL_DBG);
+        // log_backend_enable(log_backend_uart,
+        //                    log_backend_uart->cb->ctx,
+        //                    LOG_LEVEL_DBG);
         k_sleep(K_MSEC(100));
         LOG_INF("config disable");
-
-        if (settings.wifi != NULL)
-        {
-            free(settings.wifi);
-        }
-
-        if (settings.mqtt != NULL)
-        {
-            free(settings.mqtt);
-        }
-
-        if (settings.owlcms != NULL)
-        {
-            free(settings.owlcms);
-        }
 
         config_mgr_running = false;
         msys_signal_evt(SYS_EVT_CONFIG_END);

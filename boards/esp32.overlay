@@ -15,6 +15,7 @@
         sw-id-2 = &id2;
         pwm-0 = &ledc0;
         bzr0 = &bzr0;
+        uart-config = &uart1;
     };
 
     buttons {
@@ -86,6 +87,10 @@
             label = "BZR_0";
         };
     };
+};
+
+&uart1 {
+    status = "okay";
 };
 
 &i2c0 {
