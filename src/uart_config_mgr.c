@@ -14,7 +14,7 @@ LOG_MODULE_REGISTER(uart_config_mgr, LOG_LEVEL_DBG);
 #define BUF_SIZE                    256
 #define PARAM_BUF_SIZE              32
 #define CRC_POLY                    0x16
-
+#define UART_PKT_DELIM              0xFF
 
 
 /**
@@ -79,6 +79,9 @@ typedef struct {
 static bool uart_err_flag;
 
 static struct config_settings settings;
+static struct wifi_config_settings wifi_settings;
+static struct mqtt_config_settings mqtt_settings;
+static struct owlcms_config_settings owlcms_settings;
 static uint8_t wifi_ssid[32] = {};
 static uint8_t wifi_psk[32] = {};
 static uint8_t mqtt_srv[32] = {};
@@ -130,9 +133,9 @@ int uart_config_mgr_init()
         uart_tx_msg_buf[i] = 0;
     }
     
-    settings.wifi = NULL;
-    settings.mqtt = NULL;
-    settings.owlcms = NULL;
+    settings.wifi = &wifi_settings;
+    settings.mqtt = &mqtt_settings;
+    settings.owlcms = &owlcms_settings;
 
     if (!device_is_ready(uart_dev))
     {
@@ -142,6 +145,9 @@ int uart_config_mgr_init()
 
     uart_irq_callback_set(uart_dev, uart_rx_irq);
     uart_irq_rx_enable(uart_dev);
+    LOG_DBG("uart config init done");
+
+    return 0;
 }
 
 int uart_config_mgr_start()
@@ -215,7 +221,8 @@ int uart_config_mgr_stop()
 
 void uart_rx_irq(const struct device *dev, void *user_data)
 {
-    uint8_t read_char;
+    uint8_t read_char = 0;
+    LOG_DBG("uart_irq");
 
     if (!uart_irq_update(uart_dev))
     {
@@ -225,8 +232,9 @@ void uart_rx_irq(const struct device *dev, void *user_data)
     while (uart_irq_rx_ready(uart_dev))
     {
         uart_fifo_read(uart_dev, &read_char, 1);
+        LOG_DBG("got char on uart %x", read_char);
 
-        if ((read_char == '\n' || read_char == '\r') && uart_rx_buf_pos > 0)
+        if ((read_char == UART_PKT_DELIM) && uart_rx_buf_pos > 0)
         {
             uart_rx_msg_buf[uart_rx_buf_pos] = '\0';
             uart_rx_buf_pos = 0;
@@ -423,7 +431,8 @@ void uart_write_pkt(const struct device *dev, uart_pkt_t pkt)
     }
 
     // calculate and update CRC byte
-    crc = crc8(uart_tx_msg_buf+2, buf_pos-1, CRC_POLY, 69, false);
+    //crc = crc8(uart_tx_msg_buf+2, buf_pos-1, CRC_POLY, 69, false);
+    crc = 0x11;
     uart_tx_msg_buf[1] = crc;
 
     for (uint8_t i = 0; i < buf_pos; i++)
