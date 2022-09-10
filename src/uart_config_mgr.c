@@ -208,7 +208,6 @@ int uart_config_mgr_stop()
 void uart_rx_irq(const struct device *dev, void *user_data)
 {
     uint8_t read_char = 0;
-    LOG_DBG("uart_irq");
 
     if (!uart_irq_update(uart_dev))
     {
@@ -218,7 +217,6 @@ void uart_rx_irq(const struct device *dev, void *user_data)
     while (uart_irq_rx_ready(uart_dev))
     {
         uart_fifo_read(uart_dev, &read_char, 1);
-        LOG_DBG("got char on uart %x", read_char);
 
         if ((read_char == UART_PKT_DELIM) && uart_rx_buf_pos > 0)
         {
@@ -241,7 +239,7 @@ void uart_pkt_proc()
 {
     uart_pkt_t rsp_pkt = {
         .cmd = UART_CMD_RSP_ERR, 
-        .crc = 0xFF, 
+        .crc = 0x11, 
         .param_len = 0x00, 
         .data_len = 0x00
     };
@@ -288,12 +286,13 @@ void uart_pkt_proc()
                     // copy the param name we're reading to the buffer for the sending pkt
                     memcpy(param_buf, uart_rx_msg_buf+UART_PKT_OFFSET_PARAM, rsp_pkt.param_len);
                     data_len = proc_read_cmd(param_buf, rsp_pkt.param_len, data_buf);
-                    if (data_len < 0xFF)
+                    if (data_len < 0xFE)
                     {
                         rsp_pkt.cmd = UART_CMD_RSP_READ_OK;
                         rsp_pkt.data_len = data_len;
                         rsp_pkt.param = param_buf;
                         rsp_pkt.data = data_buf;
+                        LOG_DBG("rsp_pkt: %d, %d, %d, %s", rsp_pkt.cmd, rsp_pkt.param_len, rsp_pkt.data_len, rsp_pkt.param);
                     }
                     else
                     {
@@ -352,6 +351,7 @@ uint8_t proc_read_cmd(uint8_t *buf, uint8_t buf_len, uint8_t *rsp_buf)
 {
     uint8_t rsp_len = 0;
     uint8_t *param = NULL;
+    LOG_DBG("proc read param: %s, len %d", buf, buf_len);
     // search through config params for a matching name
     param = get_config_param(buf, buf_len);
     if (param != NULL)
@@ -360,12 +360,13 @@ uint8_t proc_read_cmd(uint8_t *buf, uint8_t buf_len, uint8_t *rsp_buf)
         // buffer into rsp_buf
         strcpy(rsp_buf, param);
         rsp_len = strlen(rsp_buf);
+        LOG_DBG("got param val: %s, len %d", rsp_buf, rsp_len);
     }
     else
     {
-        // if no match was found, set rsp_len to 0xFF to signal this
+        // if no match was found, set rsp_len to 0xFE to signal this
         // rsp_buf should be unchanged
-        rsp_len = 0xFF;
+        rsp_len = 0xFE;
     }
     return rsp_len;
 }
@@ -412,11 +413,15 @@ void uart_write_pkt(const struct device *dev, uart_pkt_t pkt)
     uart_tx_msg_buf[buf_pos++] = pkt.data_len;
 
     // only write param and data values if both have non-zero length
-    if (pkt.param_len > 0 && pkt.data_len > 0)
+    if (pkt.param_len > 0)
     {
-        memcpy(uart_tx_msg_buf, pkt.param, pkt.param_len);
+        memcpy(uart_tx_msg_buf+buf_pos, pkt.param, pkt.param_len);
         buf_pos += pkt.param_len;
-        memcpy(uart_tx_msg_buf, pkt.data, pkt.data_len);
+    }
+
+    if (pkt.data_len > 0)
+    {
+        memcpy(uart_tx_msg_buf+buf_pos, pkt.data, pkt.data_len);
         buf_pos += pkt.param_len;
     }
 
