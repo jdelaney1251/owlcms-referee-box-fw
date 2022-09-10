@@ -96,8 +96,8 @@ static config_params_t config_params[NUM_PARAMS] = {
     { "wifi_psk",               wifi_psk               },
     { "mqtt_srv",               mqtt_srv               },
     { "mqtt_port",              mqtt_port              },
-    { "mqtt_client_name",       mqtt_client_name       },
-    { "owlcms_platform_name",   owlcms_platform_name   },
+    { "mqtt_client",            mqtt_client_name       },
+    { "owlcms_platform",        owlcms_platform_name   },
 };
 
 static uint8_t *get_config_param(const char *param, uint8_t len);
