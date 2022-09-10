@@ -425,5 +425,5 @@ void uart_write_pkt(const struct device *dev, uart_pkt_t pkt)
     {
         uart_poll_out(dev, uart_tx_msg_buf[i]);
     }
-    uart_poll_out(dev, '\n');
+    uart_poll_out(dev, UART_PKT_DELIM);
 }
