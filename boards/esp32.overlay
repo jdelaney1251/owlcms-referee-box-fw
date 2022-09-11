@@ -15,7 +15,14 @@
         sw-id-2 = &id2;
         pwm-0 = &ledc0;
         bzr0 = &bzr0;
-        uart-config = &uart1;
+        uart-config = &uart0; // main uart for dev board USB fw update + config
+    };
+
+    // Logging only used for dev/debug - keep uart0 for fw update and
+    // config only.
+    chosen {
+        zephyr,console = &uart2;
+        zephyr,shell-uart = &uart2;
     };
 
     buttons {
@@ -89,7 +96,7 @@
     };
 };
 
-&uart1 {
+&uart2 {
     status = "okay";
 };
 
