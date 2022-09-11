@@ -105,6 +105,7 @@ void uart_rx_irq(const struct device *dev, void *user_data);
 void uart_pkt_proc();
 uint8_t proc_read_cmd(uint8_t *buf, uint8_t buf_len, uint8_t *rsp_buf);
 uint8_t proc_write_cmd(uint8_t *buf);
+uint8_t proc_write_commit_cmd();
 void uart_write_pkt(const struct device *dev, uart_pkt_t pkt);
 static bool config_mgr_running = false;
 
@@ -192,7 +193,7 @@ int uart_config_mgr_stop()
         // log_backend_enable(log_backend_uart,
         //                    log_backend_uart->cb->ctx,
         //                    LOG_LEVEL_DBG);
-        k_sleep(K_MSEC(100));
+        //k_sleep(K_MSEC(100));
         LOG_INF("config disable");
 
         config_mgr_running = false;
@@ -273,13 +274,17 @@ void uart_pkt_proc()
                     rsp_pkt.cmd = UART_CMD_RSP_OK;
                     break;
                 case UART_CMD_WRITE_PARAM:
-                    if (proc_write_cmd(uart_rx_msg_buf+UART_PKT_OFFSET_DATA_LEN) > 0)
+                    if (proc_write_cmd(uart_rx_msg_buf+UART_PKT_OFFSET_PARAM_LEN) > 0)
                     {
                         rsp_pkt.cmd = UART_CMD_RSP_WRITE_OK;
+                        rsp_pkt.param_len = 0;
+                        rsp_pkt.data_len = 0;
                     }
                     else 
                     {
                         rsp_pkt.cmd = UART_CMD_RSP_WRITE_ERR;
+                        rsp_pkt.param_len = 0;
+                        rsp_pkt.data_len = 0;
                     }
                     break;
                 case UART_CMD_READ_PARAM:
@@ -297,10 +302,27 @@ void uart_pkt_proc()
                     else
                     {
                         rsp_pkt.cmd = UART_CMD_RSP_READ_ERR;
+                        rsp_pkt.param_len = 0;
+                        rsp_pkt.data_len = 0;
                     }
                     break;
+                case UART_CMD_WRITE_COMMIT:
+                    if (proc_write_commit_cmd())
+                    {
+                        rsp_pkt.cmd = UART_CMD_RSP_WRITE_OK;
+                        rsp_pkt.param_len = 0;
+                        rsp_pkt.data_len = 0;
+                    }
+                    else
+                    {
+                        rsp_pkt.cmd = UART_CMD_RSP_ERR;
+                        rsp_pkt.param_len = 0;
+                        rsp_pkt.data_len = 0;
+                    }
                 default:
                     rsp_pkt.cmd = UART_CMD_RSP_ERR;
+                    rsp_pkt.param_len = 0;
+                    rsp_pkt.data_len = 0;
                     break;
             }
         }
@@ -379,17 +401,21 @@ uint8_t proc_write_cmd(uint8_t *buf)
     uint8_t param_len = buf[0];
     uint8_t data_len = buf[1];
     uint8_t *param = NULL;
+    LOG_DBG("proc write param: %d, %d", param_len, data_len);
     // search through the list of config params for a matching name
     param = get_config_param(buf+2, param_len);
     if (param != NULL)
     {
+        LOG_DBG("got param to write to");
         // if a match was found, copy the data from buf at the offset
         // of param_len plus the param_len byte
         // copy data_len+1 so we get a null terminator at the end of our
         // string to comply with settings_util requirements
         strncpy(param, buf+(param_len+2), data_len+1);
+        LOG_DBG("wrote param to mem %s", param);
         // return value is the number of bytes written to the config param
         ret = strlen(param);
+        LOG_DBG("got len of param %d", ret);
     }
     else
     {
@@ -412,6 +438,7 @@ void uart_write_pkt(const struct device *dev, uart_pkt_t pkt)
     uart_tx_msg_buf[buf_pos++] = pkt.param_len;
     uart_tx_msg_buf[buf_pos++] = pkt.data_len;
 
+    LOG_DBG("write uart pkt, cmd: %d, param_len: %d, data_len: %d", pkt.cmd, pkt.param_len, pkt.data_len);
     // only write param and data values if both have non-zero length
     if (pkt.param_len > 0)
     {
@@ -435,4 +462,22 @@ void uart_write_pkt(const struct device *dev, uart_pkt_t pkt)
         uart_poll_out(dev, uart_tx_msg_buf[i]);
     }
     uart_poll_out(dev, UART_PKT_DELIM);
+}
+
+uint8_t proc_write_commit_cmd()
+{
+    LOG_DBG("proc write commit");
+    strcpy(settings.wifi->ssid, wifi_ssid);
+    strcpy(settings.wifi->psk, wifi_psk);
+    strcpy(settings.mqtt->broker_addr, mqtt_srv);
+    strcpy(settings.mqtt->client_name, mqtt_client_name);
+    settings.mqtt->port |= (mqtt_port[0]);
+    settings.mqtt->port |= (mqtt_port[1] << 8);
+    strcpy(owlcms_platform_name, settings.owlcms->platform);
+
+    settings_util_set_wifi_ssid(settings.wifi->ssid, strlen(wifi_ssid));
+    settings_util_set_wifi_psk(settings.wifi->psk, strlen(wifi_psk));
+    settings_util_set_mqtt_config(settings.mqtt);
+    settings_util_set_owlcms_config(settings.owlcms);
+    return 0;
 }
