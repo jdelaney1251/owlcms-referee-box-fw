@@ -45,8 +45,8 @@ static const struct gpio_dt_spec *leds[] = {
                                         &led2,
                                         &led3};
 
-static const struct gpio_dt_spec btns[] = { GPIO_DT_SPEC_GET(BTN_USR, gpios),
-                                            GPIO_DT_SPEC_GET(BTN_RED, gpios),
+static const struct gpio_dt_spec btns[] = { GPIO_DT_SPEC_GET(BTN_RED, gpios),
+                                            GPIO_DT_SPEC_GET(BTN_USR, gpios),
                                             GPIO_DT_SPEC_GET(BTN_BLK, gpios)};
 
 
@@ -273,21 +273,21 @@ int init_btns()
         if (btns[i].port == NULL)
         {
             LOG_ERR("Failed to initialise GPIO device for button %d", i);
-            return EIO;
+            ret = EIO;
         }
 
         ret = gpio_pin_configure_dt(&btns[i], GPIO_INPUT);
         if (ret != 0)
         {
-            LOG_ERR("Failed to configure IO pin for button %d", i);
-            return EIO;
+            LOG_ERR("Failed to configure IO pin for button %d, ret %d", i, ret);
+            ret = EIO;
         }
 
         ret = gpio_pin_interrupt_configure_dt(&btns[i], GPIO_INT_EDGE_BOTH);
         if (ret != 0)
         {
             LOG_ERR("Failed to configure interrupt for button %d", i);
-            return EIO;
+            ret = EIO;
         }
 
         gpio_init_callback(&(btn_cb_data[i]), io_btn_handler, BIT(btns[i].pin));
@@ -322,7 +322,7 @@ int init_leds()
         if (leds[i]->port == NULL)
         {
             LOG_ERR("Failed to initialise GPIO device for LED %d", i);
-            return EIO;
+            ret = EIO;
         }
 
         //LOG_INF("init led %d\n", i);
@@ -331,7 +331,7 @@ int init_leds()
         if (ret != 0)
         {
             LOG_ERR("Failed to configure IO pin for LED %d", i);
-            return EIO;
+            ret = EIO;
         }
         //LOG_INF("ret %d\n", i);
 
@@ -358,14 +358,14 @@ int init_dev_id_sw()
         if (sw_id[i].port == NULL)
         {
             LOG_ERR("Failed to initialise GPIO device for id switch %d", i);
-            return EIO;
+            ret = EIO;
         }
 
-        ret = gpio_pin_configure_dt(&btns[i], GPIO_INPUT);
+        ret = gpio_pin_configure_dt(&sw_id[i], GPIO_INPUT);
         if (ret != 0)
         {
             LOG_ERR("Failed to configure IO pin for id switch %d, ret %d", i, ret);
-            return EIO;
+            ret = EIO;
         }
     }
     return ret;
