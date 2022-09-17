@@ -327,6 +327,8 @@ int settings_util_load_wifi_config(struct wifi_config_settings *params)
 
     strcpy(params->ssid, settings[SSID_ID].data);
     strcpy(params->psk, settings[PSK_ID].data);
+    params->ssid_length = settings[SSID_LEN_ID].data;
+    params->psk_length = settings[PSK_LEN_ID].data;
 }
 
 int settings_util_set_wifi_ssid(const char *ssid, uint8_t len)
