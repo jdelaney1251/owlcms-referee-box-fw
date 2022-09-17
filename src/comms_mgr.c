@@ -115,7 +115,7 @@ static void process_comms_cmd(comms_cmd_t cmd)
         else 
         {
             LOG_DBG("starting wifi");
-            wifi_conn_reset();
+            //wifi_conn_reset();
             wifi_conn_setup(&wifi_config);
             wifi_conn_connect();
         }
