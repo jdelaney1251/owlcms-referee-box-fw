@@ -1,18 +1,18 @@
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(settings_util, LOG_LEVEL_ERR);
 
 #include <string.h>
 
-#include <zephyr.h>
-#include <settings/settings.h>
+#include <zephyr/kernel.h>
+#include <zephyr/settings/settings.h>
 #include <zephyr/settings/settings.h>
 #include <zephyr/device.h>
 #include <string.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/fs/nvs.h>
-#include <net/wifi_mgmt.h>
+#include <zephyr/net/wifi_mgmt.h>
 
 #include "settings_util.h"
 

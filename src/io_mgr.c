@@ -1,8 +1,8 @@
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(io_mgr, LOG_LEVEL_DBG);
 
-#include <zephyr.h>
+#include <zephyr/kernel.h>
 
 #include "io_mgr.h"
 #include "io.h"

@@ -1,7 +1,7 @@
 #ifndef SETTINGS_UTIL_H_
 #define SETTINGS_UTIL_H_
 
-#include <net/wifi_mgmt.h>
+#include <zephyr/net/wifi_mgmt.h>
 
 
 struct wifi_config_settings {

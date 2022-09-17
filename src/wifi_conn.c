@@ -4,14 +4,14 @@ LOG_MODULE_REGISTER(wifi_mod, LOG_LEVEL_DBG);
 
 #include <zephyr/zephyr.h>
 
-#include <net/net_if.h>
-#include <net/net_core.h>
-#include <net/net_context.h>
-#include <net/wifi_mgmt.h>
-#include <net/net_mgmt.h>
-#include <net/ethernet_mgmt.h>
-#include <net/wifi.h>
-#include <net/net_event.h>
+#include <zephyr/net/net_if.h>
+#include <zephyr/net/net_core.h>
+#include <zephyr/net/net_context.h>
+#include <zephyr/net/wifi_mgmt.h>
+#include <zephyr/net/net_mgmt.h>
+#include <zephyr/net/ethernet_mgmt.h>
+#include <zephyr/net/wifi.h>
+#include <zephyr/net/net_event.h>
 
 #include <esp_wifi.h>
 #include <esp_event.h>
@@ -138,17 +138,17 @@ void wifi_conn_connect(struct k_work *work)
     ret = esp_wifi_connect();
     if (ret != 0)
     {
-        LOG_ERR("Failed to connect");
+        LOG_ERR("Failed to connect %d", ret);
     }
 }
 
 void wifi_conn_reset(struct k_work *work)
 {
     esp_err_t ret;
-    ret = esp_wifi_set_mode(WIFI_MODE_STA);
+    ret = esp_wifi_set_mode(ESP32_WIFI_MODE_STA);
     if (ret != 0)
     {
-        LOG_ERR("Failed to set wifi mode");
+        LOG_ERR("Failed to set wifi mode: %d", ret);
     }
 
 }
@@ -167,7 +167,7 @@ void wifi_conn_setup(struct wifi_config_settings *params)
     ret = esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg);
     if (ret != 0)
     {
-        LOG_ERR("Failed to configure wifi");
+        LOG_ERR("Failed to configure wifi: %d", ret);
     }
 
 }
